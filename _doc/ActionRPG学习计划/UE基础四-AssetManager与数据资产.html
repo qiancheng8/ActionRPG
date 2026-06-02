@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UE 基础四 · Asset Manager 与数据资产（知识点关系图解）</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a22; --panel2:#1d222c; --line:#2b313d;
+    --fg:#e6e9ef; --muted:#9aa4b2; --accent:#5aa9ff; --accent2:#7ee787;
+    --warn:#ffcc66; --cpp:#ff9d7a; --bp:#a78bfa; --cfg:#7ee787;
+    --code-bg:#11151c; --code-fg:#d6deeb;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    line-height:1.85; font-size:16px;
+  }
+  .wrap{display:flex; max-width:1280px; margin:0 auto;}
+  /* 侧边导航 */
+  nav{
+    position:sticky; top:0; align-self:flex-start; height:100vh; overflow:auto;
+    width:240px; padding:24px 16px; border-right:1px solid var(--line);
+    background:var(--panel); font-size:14px; flex:0 0 240px;
+  }
+  nav h2{font-size:13px; color:var(--muted); letter-spacing:1px; margin:0 0 12px;}
+  nav a{display:block; color:var(--fg); text-decoration:none; padding:6px 10px; border-radius:8px; margin-bottom:2px;}
+  nav a:hover{background:var(--panel2); color:var(--accent);}
+  nav a.sub{padding-left:22px; color:var(--muted); font-size:13px;}
+  main{flex:1; min-width:0; padding:36px 48px 120px;}
+  h1{font-size:30px; line-height:1.4; margin:0 0 8px;}
+  .lead{color:var(--muted); font-size:15px; margin-bottom:28px;}
+  h2{font-size:23px; margin:46px 0 14px; padding-top:10px; border-top:1px solid var(--line);}
+  h3{font-size:18px; margin:30px 0 10px; color:var(--accent);}
+  p{margin:12px 0;}
+  code{font-family:"JetBrains Mono","Consolas",monospace; background:#222836; color:#ffd9a0; padding:1px 6px; border-radius:5px; font-size:.9em;}
+  pre{background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow:auto; margin:16px 0;}
+  pre code{background:none; color:var(--code-fg); padding:0; font-size:13.5px; line-height:1.7;}
+  .cmt{color:#6b7689;}
+  .kw{color:#c792ea;} .ty{color:#82aaff;} .str{color:#c3e88d;} .fn{color:#82d9ff;}
+  table{border-collapse:collapse; width:100%; margin:18px 0; font-size:14.5px;}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left;}
+  th{background:var(--panel2); color:var(--accent);}
+  tr:nth-child(even) td{background:#13171f;}
+  strong{color:#fff;}
+  .tip{border-left:4px solid var(--warn); background:#211d12; padding:12px 16px; border-radius:0 8px 8px 0; margin:18px 0;}
+  .tip b{color:var(--warn);}
+  /* ===== 关系图通用 ===== */
+  .diagram{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; margin:22px 0;}
+  .diagram .cap{font-size:13px; color:var(--muted); margin-bottom:16px; letter-spacing:.5px;}
+  .box{border:1.5px solid var(--line); border-radius:10px; padding:10px 14px; background:var(--panel2); display:inline-block; text-align:center;}
+  .box .t{font-weight:700; font-family:"JetBrains Mono",monospace;}
+  .box .d{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .box.cpp{border-color:var(--cpp);} .box.cpp .t{color:var(--cpp);}
+  .box.bp{border-color:var(--bp);} .box.bp .t{color:var(--bp);}
+  .box.cfg{border-color:var(--cfg);} .box.cfg .t{color:var(--cfg);}
+  .box.engine{border-color:var(--accent);} .box.engine .t{color:var(--accent);}
+  .flow{display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px;}
+  .arr{color:var(--accent); font-size:22px; padding:0 6px; white-space:nowrap;}
+  .arr small{display:block; font-size:11px; color:var(--muted); text-align:center; line-height:1;}
+  .vstack{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .legend{display:flex; gap:18px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:16px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .anchor{position:relative; top:-10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <h2>目录</h2>
+  <a href="#top">开篇 · 物品怎么组织和加载</a>
+  <a href="#map">★ 知识点关系总图</a>
+  <a href="#why">一、为什么需要 Asset Manager</a>
+  <a href="#item">二、URPGItem 抽象基类</a>
+  <a href="#sub">三、四个子类，四种类型</a>
+  <a href="#register">四、注册：让引擎去哪儿扫</a>
+  <a href="#load">五、加载：同步 vs 异步</a>
+  <a href="#practice">六、动手：加一个新物品类型</a>
+  <a href="#p1" class="sub">第一处：C++ 子类</a>
+  <a href="#p2" class="sub">第二处：类型常量</a>
+  <a href="#p3" class="sub">第三处：ini 扫描条目</a>
+  <a href="#editor" class="sub">编辑器里建资产</a>
+  <a href="#check">七、验收清单</a>
+</nav>
+
+<main>
+<span class="anchor" id="top"></span>
+<h1>成百上千件物品，怎么做成数据、又怎么省着内存按需加载<br>看懂 UE 的 Asset Manager 与 Primary Data Assets</h1>
+<p class="lead">UE 基础 · 第四阶段　|　面向有 C++ 底子、零 UE 正向开发经验的读者　|　本页在原文基础上加了一组关系图，重点把「物品类型三处同步改」「资产加载流程」这些关系画成网。</p>
+
+<p>接着学习计划往下走。前三个阶段你已经能编译、能读蓝图、能在 C++ 基类和蓝图子类之间来回跳了。这一篇换个主题，聊聊 ActionRPG 里所有"物品"是怎么组织和加载的。说实话，这块是这个示例项目最有工程价值的地方之一，也是它跟那些"教学 demo"拉开差距的地方。</p>
+<p>我假设你有 C++ 底子，但没正经做过 UE 项目。所以下面会从"为什么要这么干"讲起，再贴真实代码，最后带你动手加一个新物品类型。动手那一节最重要，因为有个坑我自己踩过，新手几乎都会踩。</p>
+
+<!-- ===================== 关系总图 ===================== -->
+<span class="anchor" id="map"></span>
+<h2>★ 先看一张图：这一篇的知识点怎么串起来</h2>
+<p>这一篇绕着一个核心转：物品做成<strong>数据资产</strong>，由 <strong>Asset Manager</strong> 扫描建索引、按 <strong>id</strong> 指代、按需加载。下面先把整条链铺开，后面每节再放大看局部。</p>
+
+<div class="diagram">
+  <div class="cap">核心关系：C++ 划类型 → 数据资产填数值 → Asset Manager 扫描建索引 → 按 id 加载</div>
+  <div class="flow">
+    <div class="box cpp"><div class="t">URPGItem 子类</div><div class="d">C++ 划清楚「类型」</div></div>
+    <span class="arr">→<small>每个子类=一种<br>FPrimaryAssetType</small></span>
+    <div class="box bp"><div class="t">数据资产实例</div><div class="d">设计师在编辑器填数值</div></div>
+    <span class="arr">→<small>放进 Content/Items/&lt;Type&gt;</small></span>
+    <div class="box engine"><div class="t">Asset Manager</div><div class="d">启动扫描建索引（不加载内容）</div></div>
+  </div>
+  <div class="flow" style="margin-top:14px;">
+    <div class="box cfg" style="border-style:dashed;"><div class="t">DefaultGame.ini</div><div class="d">PrimaryAssetTypesToScan 告诉引擎：每种类型去哪个目录扫</div></div>
+    <span class="arr">→<small>按需</small></span>
+    <div class="box" style="border-color:#3a4150"><div class="t">FPrimaryAssetId</div><div class="d">全项目用 id 指代物品，不持裸指针</div></div>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--cfg)"></i>配置（.ini）</span>
+    <span><i class="dot" style="background:var(--bp)"></i>数据资产（Content/）</span>
+    <span><i class="dot" style="background:var(--cpp)"></i>C++（Source/）</span>
+    <span><i class="dot" style="background:var(--accent)"></i>引擎运行时</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <div class="cap">由核心关系派生出的几个细节问题，正好是后面几节</div>
+  <div class="flow" style="gap:14px;">
+    <div class="vstack">
+      <div class="box"><div class="t">为什么要这套？</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">第一节：移动端按需加载</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box cpp"><div class="t">类型怎么划？</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">第二、三节：抽象基类 + 四子类</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box cfg"><div class="t">引擎怎么找到？</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">第四节：ini 注册扫描目录</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box"><div class="t">怎么加载？</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">第五节：同步 vs 异步</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box warn"><div class="t">加新类型？</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">第六节：三处缺一不可</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 一、为什么 ===================== -->
+<span class="anchor" id="why"></span>
+<h2>一、先说为什么需要 Asset Manager</h2>
+<p>你写过普通 C++ 程序，加载一个资源大概就是直接 <code>new</code> 一下、或者从磁盘读个文件。这套思路放到 UE 移动端 RPG 上会出大问题。</p>
+<p>一个 RPG 有几百上千件物品：药水、技能、武器、各种代币。每件物品身上挂着图标、描述文本、绑定的能力、模型引用。如果游戏一启动就把这些全加载进内存，手机直接卡死给你看。可你又不能完全不管它，因为玩家随时可能开背包、捡装备、用技能。</p>
+<p>所以引擎推荐的做法是两条腿走路。第一，<strong>数据驱动</strong>，物品的所有参数都做成"数据资产"，由设计师在编辑器里填，不写死在代码里。第二，<strong>按需异步加载</strong>，只在真正要用某件物品的时候才把它的资源拉进内存，用完还能让 GC 回收掉。</p>
+<p>Asset Manager 就是干这个的。它在引擎启动时扫描你声明的那些资产目录，建立一张"我知道哪里有哪些物品"的索引表，但<strong>不立刻加载内容</strong>。等你真要用了，再通过它去加载。这张索引表里每件物品都有个唯一身份证，叫 <code>FPrimaryAssetId</code>，全项目都靠它来指代一件物品，而不是直接拿裸指针。</p>
+
+<p>ActionRPG 把引擎自带的 <code>UAssetManager</code> 继承了一层，做成 <code>URPGAssetManager</code>，加了点游戏自己的东西。配置上是这么挂的（在 <code>Config/DefaultEngine.ini</code> 里）：</p>
+<pre><code>AssetManagerClassName=<span class="str">/Script/ActionRPG.RPGAssetManager</span></code></pre>
+<p>注意这一条直接指向 C++ 类，不是蓝图子类。前面阶段二讲过本项目大多数基类都被蓝图化了再引用，资产管理器是个例外，它不需要设计师改什么，所以就直接用 C++ 类本身。</p>
+
+<!-- ===================== 二、URPGItem ===================== -->
+<span class="anchor" id="item"></span>
+<h2>二、URPGItem：抽象的数据资产基类</h2>
+<p>物品的根基类是 <code>URPGItem</code>，定义在 <code>Source/ActionRPG/Public/Items/RPGItem.h</code>。它继承自 <code>UPrimaryDataAsset</code>，而且是抽象的，注释里写得很直白，别直接蓝图化它：</p>
+<pre><code><span class="cmt">/** Base class for all items, do not blueprint directly */</span>
+<span class="kw">UCLASS</span>(Abstract, BlueprintType)
+<span class="kw">class</span> ACTIONRPG_API <span class="ty">URPGItem</span> : <span class="kw">public</span> <span class="ty">UPrimaryDataAsset</span>
+{
+    GENERATED_BODY()
+
+<span class="kw">public</span>:
+    <span class="cmt">/** Type of this item, set in native parent class */</span>
+    <span class="kw">UPROPERTY</span>(VisibleAnywhere, BlueprintReadOnly, Category = Item)
+    <span class="ty">FPrimaryAssetType</span> ItemType;          <span class="cmt">// 物品类型，由具体 C++ 子类在构造函数里设定</span>
+
+    <span class="cmt">/** User-visible short name */</span>
+    <span class="kw">UPROPERTY</span>(EditAnywhere, BlueprintReadOnly, Category = Item)
+    <span class="ty">FText</span> ItemName;                       <span class="cmt">// 显示名</span>
+
+    <span class="cmt">/** Icon to display */</span>
+    <span class="kw">UPROPERTY</span>(EditAnywhere, BlueprintReadOnly, Category = Item)
+    <span class="ty">FSlateBrush</span> ItemIcon;                 <span class="cmt">// 图标</span>
+
+    <span class="cmt">/** Ability to grant if this item is slotted */</span>
+    <span class="kw">UPROPERTY</span>(EditAnywhere, BlueprintReadOnly, Category = Abilities)
+    <span class="ty">TSubclassOf</span>&lt;<span class="ty">URPGGameplayAbility</span>&gt; GrantedAbility;   <span class="cmt">// 物品装到槽位时授予的能力</span>
+    <span class="cmt">// ... Price / MaxCount / MaxLevel / AbilityLevel 等省略</span>
+};</code></pre>
+
+<p>这里有两个东西要盯住。</p>
+<p><code>FPrimaryAssetType ItemType</code> 是这件物品属于哪一类。它不在数据资产里手填，而是由具体子类在 C++ 构造函数里写死。<code>UPROPERTY</code> 上是 <code>VisibleAnywhere</code>，意思是编辑器里能看见但改不了。</p>
+<p>再看文件最底下这个 override，理解它你就懂了"身份证"是怎么拼出来的：</p>
+<pre><code><span class="ty">FPrimaryAssetId</span> <span class="ty">URPGItem</span>::<span class="fn">GetPrimaryAssetId</span>() <span class="kw">const</span>
+{
+    <span class="cmt">// 这是 DataAsset 不是蓝图，所以直接用原始 FName 就行</span>
+    <span class="cmt">// 如果是蓝图，还要处理掉 _C 后缀</span>
+    <span class="kw">return</span> <span class="ty">FPrimaryAssetId</span>(ItemType, <span class="fn">GetFName</span>());
+}</code></pre>
+<p>一个 <code>FPrimaryAssetId</code> 由两部分拼成：类型（比如 <code>Potion</code>）加上这个资产自己的名字。所以一瓶叫 <code>Potion_Health</code> 的药水，它的 id 就是 <code>Potion:Potion_Health</code>。全项目要引用这瓶药水，传这个 id 就够了，不需要持有它的指针，也不需要它已经被加载。这点对移动端很关键。</p>
+
+<div class="diagram">
+  <div class="cap">关系图 4：id / type 与 数据资产实例、目录、CookRule 的关联</div>
+  <div class="flow" style="gap:10px;">
+    <div class="box cpp"><div class="t">FPrimaryAssetType</div><div class="d">"Potion"<br>由 C++ 子类构造函数设定</div></div>
+    <span class="arr" style="font-size:26px;color:var(--warn)">+</span>
+    <div class="box"><div class="t" style="color:var(--accent2)">GetFName()</div><div class="d">资产自己的名字<br>Potion_Health</div></div>
+    <span class="arr">=</span>
+    <div class="box" style="border-color:var(--accent)"><div class="t" style="color:var(--accent)">FPrimaryAssetId</div><div class="d">Potion:Potion_Health<br>全项目用它指代</div></div>
+  </div>
+  <div class="flow" style="margin-top:16px; gap:8px;">
+    <div class="box bp"><div class="t">数据资产实例</div><div class="d">.uasset · 设计师填数值</div></div>
+    <span class="arr">↘<small>必须放进</small></span>
+    <div class="box cfg"><div class="t">Content/Items/&lt;Type&gt;</div><div class="d">如 Content/Items/Potions<br>= /Game/Items/Potions</div></div>
+    <span class="arr">↘<small>打包规则</small></span>
+    <div class="box" style="border-color:var(--warn)"><div class="t" style="color:var(--warn)">CookRule=AlwaysCook</div><div class="d">动态加载的资产<br>必须强制打进包</div></div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;">type 决定 id 前缀，也决定它该躺在哪个目录、被哪条扫描规则收编</p>
+</div>
+
+<!-- ===================== 三、四个子类 ===================== -->
+<span class="anchor" id="sub"></span>
+<h2>三、四个子类，四种类型</h2>
+<p><code>URPGItem</code> 自己是抽象的，真正能用的是四个具体子类。它们都在 <code>Source/ActionRPG/Public/Items/</code> 下，每个文件都短得可怜，核心就是在构造函数里给 <code>ItemType</code> 赋个值。</p>
+
+<div class="diagram">
+  <div class="cap">关系图 1：物品类继承体系 — 一个抽象基类，四个子类各对应一种 FPrimaryAssetType</div>
+  <div class="vstack" style="gap:14px;">
+    <div class="box cpp" style="border-color:var(--accent2)"><div class="t" style="color:var(--accent2)">URPGItem</div><div class="d">abstract · 继承 UPrimaryDataAsset<br>「别直接蓝图化」</div></div>
+    <span class="arr" style="font-size:18px">↑ ↑ ↑ ↑ 都 public 继承</span>
+    <div class="flow" style="gap:12px;">
+      <div class="box cpp"><div class="t">URPGPotionItem</div><div class="d">ItemType = "Potion"</div></div>
+      <div class="box cpp"><div class="t">URPGSkillItem</div><div class="d">ItemType = "Skill"</div></div>
+      <div class="box cpp"><div class="t">URPGTokenItem</div><div class="d">ItemType = "Token"<br>MaxCount = 0 无限叠</div></div>
+      <div class="box cpp"><div class="t">URPGWeaponItem</div><div class="d">ItemType = "Weapon"<br>多 WeaponActor 字段</div></div>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;">子类几乎不写逻辑，存在意义就是「声明我是一种独立的 FPrimaryAssetType」</p>
+</div>
+
+<p>药水（<code>RPGPotionItem.h</code>）：</p>
+<pre><code><span class="kw">UCLASS</span>()
+<span class="kw">class</span> ACTIONRPG_API <span class="ty">URPGPotionItem</span> : <span class="kw">public</span> <span class="ty">URPGItem</span>
+{
+    GENERATED_BODY()
+<span class="kw">public</span>:
+    <span class="fn">URPGPotionItem</span>()
+    {
+        ItemType = <span class="ty">URPGAssetManager</span>::PotionItemType;   <span class="cmt">// 类型 = "Potion"</span>
+    }
+};</code></pre>
+
+<p>技能（<code>RPGSkillItem.h</code>）几乎一样，只是类型换成 <code>SkillItemType</code>。代币（<code>RPGTokenItem.h</code>）多了一行，因为代币应该能无限叠加：</p>
+<pre><code><span class="fn">URPGTokenItem</span>()
+{
+    ItemType = <span class="ty">URPGAssetManager</span>::TokenItemType;
+    MaxCount = <span class="ty">0</span>; <span class="cmt">// Infinite，0 表示数量无上限</span>
+}</code></pre>
+
+<p>武器（<code>RPGWeaponItem.h</code>）比别的多一个属性，因为武器需要在世界里生成一个 actor：</p>
+<pre><code><span class="kw">UCLASS</span>()
+<span class="kw">class</span> ACTIONRPG_API <span class="ty">URPGWeaponItem</span> : <span class="kw">public</span> <span class="ty">URPGItem</span>
+{
+    GENERATED_BODY()
+<span class="kw">public</span>:
+    <span class="fn">URPGWeaponItem</span>()
+    {
+        ItemType = <span class="ty">URPGAssetManager</span>::WeaponItemType;   <span class="cmt">// 类型 = "Weapon"</span>
+    }
+
+    <span class="cmt">/** Weapon actor to spawn */</span>
+    <span class="kw">UPROPERTY</span>(EditAnywhere, BlueprintReadOnly, Category = Weapon)
+    <span class="ty">TSubclassOf</span>&lt;<span class="ty">AActor</span>&gt; WeaponActor;                   <span class="cmt">// 装备时要生成的武器 actor</span>
+};</code></pre>
+
+<p>看出门道了吧。子类自己几乎不写逻辑，它存在的全部意义就是声明"我是一个独立的 <code>FPrimaryAssetType</code>"，顺手调一两个默认值。这就是数据驱动的味道，类型靠 C++ 划清楚，具体每一件物品的数值靠数据资产去填。</p>
+
+<p>那 <code>PotionItemType</code> 这些常量到底是啥？它们是 <code>URPGAssetManager</code> 上的静态成员，声明在 <code>RPGAssetManager.h</code>：</p>
+<pre><code><span class="cmt">/** Static types for items */</span>
+<span class="kw">static const</span> <span class="ty">FPrimaryAssetType</span>	PotionItemType;
+<span class="kw">static const</span> <span class="ty">FPrimaryAssetType</span>	SkillItemType;
+<span class="kw">static const</span> <span class="ty">FPrimaryAssetType</span>	TokenItemType;
+<span class="kw">static const</span> <span class="ty">FPrimaryAssetType</span>	WeaponItemType;</code></pre>
+
+<p>真正的字符串值在 <code>RPGAssetManager.cpp</code> 里定义：</p>
+<pre><code><span class="kw">const</span> <span class="ty">FPrimaryAssetType</span>	<span class="ty">URPGAssetManager</span>::PotionItemType = <span class="fn">TEXT</span>(<span class="str">"Potion"</span>);
+<span class="kw">const</span> <span class="ty">FPrimaryAssetType</span>	<span class="ty">URPGAssetManager</span>::SkillItemType  = <span class="fn">TEXT</span>(<span class="str">"Skill"</span>);
+<span class="kw">const</span> <span class="ty">FPrimaryAssetType</span>	<span class="ty">URPGAssetManager</span>::TokenItemType  = <span class="fn">TEXT</span>(<span class="str">"Token"</span>);
+<span class="kw">const</span> <span class="ty">FPrimaryAssetType</span>	<span class="ty">URPGAssetManager</span>::WeaponItemType = <span class="fn">TEXT</span>(<span class="str">"Weapon"</span>);</code></pre>
+<p>为啥不把字符串直接写在每个子类里？因为这样四个子类、资产管理器内部的加载逻辑、还有别处的代码，全都引用同一份常量，改一个地方就够了，不会出现一边写 <code>"Potion"</code> 一边写 <code>"potion"</code> 的对不上。</p>
+
+<!-- ===================== 四、注册 ===================== -->
+<span class="anchor" id="register"></span>
+<h2>四、注册：让引擎知道去哪儿扫</h2>
+<p>光有 C++ 类型还不够。引擎启动时怎么知道"Potion 这种东西要去哪个目录找"？答案在 <code>Config/DefaultGame.ini</code> 的 <code>[/Script/Engine.AssetManagerSettings]</code> 段。每一种物品类型对应一条 <code>PrimaryAssetTypesToScan</code>：</p>
+<pre><code><span class="cmt">[/Script/Engine.AssetManagerSettings]</span>
++PrimaryAssetTypesToScan=(PrimaryAssetType=<span class="str">"Potion"</span>,AssetBaseClass=<span class="str">/Script/ActionRPG.RPGPotionItem</span>,bHasBlueprintClasses=False,bIsEditorOnly=False,Directories=((Path=<span class="str">"/Game/Items/Potions"</span>)),SpecificAssets=,Rules=(Priority=-1,bApplyRecursively=True,ChunkId=-1,CookRule=AlwaysCook))
++PrimaryAssetTypesToScan=(PrimaryAssetType=<span class="str">"Skill"</span>,AssetBaseClass=<span class="str">/Script/ActionRPG.RPGSkillItem</span>,...,Directories=((Path=<span class="str">"/Game/Items/Skills"</span>)),...,Rules=(...,CookRule=AlwaysCook))
++PrimaryAssetTypesToScan=(PrimaryAssetType=<span class="str">"Token"</span>,AssetBaseClass=<span class="str">/Script/ActionRPG.RPGTokenItem</span>,...,Directories=((Path=<span class="str">"/Game/Items/Tokens"</span>)),...,Rules=(...,CookRule=AlwaysCook))
++PrimaryAssetTypesToScan=(PrimaryAssetType=<span class="str">"Weapon"</span>,AssetBaseClass=<span class="str">/Script/ActionRPG.RPGWeaponItem</span>,...,Directories=((Path=<span class="str">"/Game/Items/Weapons"</span>)),...,Rules=(...,CookRule=AlwaysCook))</code></pre>
+
+<p>逐字段拆开看：</p>
+<ul>
+  <li><code>PrimaryAssetType="Potion"</code>，这串字符串必须跟 C++ 里 <code>PotionItemType</code> 的值一模一样，引擎靠它把配置和类型对上号。</li>
+  <li><code>AssetBaseClass=/Script/ActionRPG.RPGPotionItem</code>，指向对应的 C++ 子类。</li>
+  <li><code>Directories=((Path="/Game/Items/Potions"))</code>，扫描目录。注意 <code>/Game</code> 在引擎里等于 <code>Content/</code> 文件夹，所以这条对应磁盘上的 <code>Content/Items/Potions</code>。</li>
+  <li><code>CookRule=AlwaysCook</code>，打包（cook）时总是把这些资产打进去。物品是按 id 动态加载的，cook 阶段静态分析往往发现不了谁引用了它们，不强制 AlwaysCook 的话打出来的包会缺资源。</li>
+</ul>
+<p>行首那个 <code>+</code> 是 ini 的数组追加语法，表示往 <code>PrimaryAssetTypesToScan</code> 这个列表里再加一项，而不是覆盖。</p>
+<p>到这里整条链就闭合了。引擎读 ini 知道要扫 <code>Content/Items/Potions</code>，扫到的资产按 <code>RPGPotionItem</code> 类型解释，每个资产的 id 是 <code>Potion:资产名</code>。</p>
+
+<!-- ===================== 五、加载 ===================== -->
+<span class="anchor" id="load"></span>
+<h2>五、加载：同步省事，但会卡</h2>
+<p>资产被扫描到只是建了索引，内容还没进内存。要真正拿到一件物品对象，看 <code>URPGAssetManager::ForceLoadItem</code>：</p>
+<pre><code><span class="ty">URPGItem</span>* <span class="ty">URPGAssetManager</span>::<span class="fn">ForceLoadItem</span>(<span class="kw">const</span> <span class="ty">FPrimaryAssetId</span>&amp; PrimaryAssetId, <span class="kw">bool</span> bLogWarning)
+{
+    <span class="ty">FSoftObjectPath</span> ItemPath = <span class="fn">GetPrimaryAssetPath</span>(PrimaryAssetId);
+
+    <span class="cmt">// 这是同步加载，可能会卡顿（hitch）</span>
+    <span class="ty">URPGItem</span>* LoadedItem = <span class="ty">Cast</span>&lt;<span class="ty">URPGItem</span>&gt;(ItemPath.<span class="fn">TryLoad</span>());
+
+    <span class="kw">if</span> (bLogWarning &amp;&amp; LoadedItem == <span class="kw">nullptr</span>)
+    {
+        <span class="fn">UE_LOG</span>(LogActionRPG, Warning, <span class="fn">TEXT</span>(<span class="str">"Failed to load item for identifier %s!"</span>), *PrimaryAssetId.<span class="fn">ToString</span>());
+    }
+    <span class="kw">return</span> LoadedItem;
+}</code></pre>
+
+<p>这函数很直接：拿 id 换路径，<code>TryLoad()</code> 同步加载，加载失败打个警告。它的头文件注释把权衡说得很清楚，照搬过来：</p>
+<div class="tip"><b>原注释　</b>Synchronously loads an RPGItem subclass, this can hitch but is useful when you cannot wait for an async load. This does not maintain a reference to the item so it will garbage collect if not loaded some other way.</div>
+<p>两个关键点。一，它是<strong>同步</strong>的，加载这件物品时整个游戏线程就停在这儿等磁盘，物品资源大或者一次加载一堆，画面就会卡一下（hitch）。二，它<strong>不持有引用</strong>，函数返回后如果没有别的地方（比如背包的 <code>UPROPERTY</code> 指针）抓住这个对象，下次 GC 就把它回收了。</p>
+
+<div class="diagram">
+  <div class="cap">关系图 3：资产加载流程 — 启动只建索引，真要用才加载，同步 vs 异步两条路</div>
+  <div class="flow">
+    <div class="box engine"><div class="t">引擎启动</div><div class="d">扫描目录建索引<br><b style="color:var(--warn)">不加载内容</b></div></div>
+    <span class="arr">→<small>用什么找？</small></span>
+    <div class="box"><div class="t" style="color:var(--accent)">FPrimaryAssetId</div><div class="d">索引里每件物品一个 id</div></div>
+    <span class="arr">→<small>真要用了</small></span>
+    <div class="vstack" style="gap:10px;">
+      <div class="box cpp"><div class="t">ForceLoadItem（同步）</div><div class="d">TryLoad() 阻塞游戏线程<br>会卡顿(hitch) · 不持引用 → GC 会回收</div></div>
+      <div style="color:var(--muted);font-size:12px">— 对比 —</div>
+      <div class="box" style="border-color:var(--accent2)"><div class="t" style="color:var(--accent2)">LoadPrimaryAssets（异步）</div><div class="d">后台加载，完成回调通知<br>背包/存档流程用这套</div></div>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;">名字里的 <code>Force</code> 就是提醒你：这是有代价的应急通道</p>
+</div>
+
+<p>那什么时候该用同步、什么时候用异步？经验上是这样的。需要立刻拿到结果、又确定卡顿可接受的场合用同步，比如某些编辑器工具、或者已经在加载屏后面、玩家本来就在等的初始化阶段。正常游戏过程里能提前预测的加载，比如进图前预载这张图会用到的物品，应该走异步，让加载在后台慢慢做，做完回调通知你。Asset Manager 提供了异步加载接口（<code>LoadPrimaryAssets</code> 之类），ActionRPG 在背包和存档流程里用的就是异步那套。<code>ForceLoadItem</code> 是个"应急通道"，名字里那个 <code>Force</code> 就是提醒你这是有代价的。</p>
+<p>移动端尤其要把这条记牢。手机磁盘慢、内存小，能异步就别同步，能晚加载就别早加载，用完让它被 GC 回收掉。这也是前面说的"区别于教学 demo"的地方，demo 才会图省事一股脑全同步加载。</p>
+
+<!-- ===================== 六、动手 ===================== -->
+<span class="anchor" id="practice"></span>
+<h2>六、动手练习：加一个新物品类型</h2>
+<p>理论说完了，下面是这阶段的重头戏。我们加一种新物品类型，假设叫 <strong>护甲（Armor）</strong>。这个练习的目的不是真做出能用的护甲，而是让你亲身体会一条铁律：</p>
+<div class="tip"><b>铁律　</b>加一个新物品类型，<strong>必须同步改三个地方，漏任何一处都扫不到。</strong></div>
+<p>我第一次做的时候就漏了第三处（ini 那条），C++ 编译得好好的，结果编辑器里死活看不到资产、加载永远失败，对着代码看了半天才反应过来扫描配置根本没注册。所以下面三步一步都别少。</p>
+
+<div class="diagram">
+  <div class="cap">关系图 2（本篇最重要）：新增物品类型必须三处同步改，三者缺一不可</div>
+  <div class="flow" style="gap:10px; align-items:stretch;">
+    <div class="vstack">
+      <div class="box cpp" style="min-width:190px"><div class="t">① 新 C++ 子类</div><div class="d">RPGArmorItem.h<br>构造函数设 ItemType</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box cpp" style="min-width:190px"><div class="t">② RPGAssetManager 常量</div><div class="d">加 ArmorItemType<br>= TEXT("Armor")</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box cfg" style="min-width:190px"><div class="t">③ DefaultGame.ini 条目</div><div class="d">+PrimaryAssetTypesToScan<br>PrimaryAssetType="Armor"</div></div>
+    </div>
+  </div>
+  <div class="flow" style="margin-top:14px;">
+    <span class="arr" style="color:var(--accent2)">①②③ 全部一致 ↓ 才能</span>
+    <div class="box engine" style="border-color:var(--accent2)"><div class="t" style="color:var(--accent2)">被扫描 / 被加载</div><div class="d">索引里出现 Armor:Armor_Iron，ForceLoadItem 能成功</div></div>
+  </div>
+  <div class="flow" style="margin-top:10px;">
+    <span class="arr" style="color:#ff6b6b">漏任一处 ↓</span>
+    <div class="box" style="border-color:#ff6b6b"><div class="t" style="color:#ff6b6b">扫不到 / 加载失败</div><div class="d">漏① 没类型；漏② 编译不过；漏③ 文件在却扫不到</div></div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;">三处的字符串 <code>"Armor"</code> 必须完全一致，引擎靠它把三者对上号</p>
+</div>
+
+<span class="anchor" id="p1"></span>
+<h3>第一处：新建 C++ 子类</h3>
+<p>照着 <code>RPGWeaponItem.h</code> 抄一份，新建 <code>Source/ActionRPG/Public/Items/RPGArmorItem.h</code>：</p>
+<pre><code><span class="cmt">// Copyright Epic Games, Inc. All Rights Reserved.</span>
+
+<span class="kw">#pragma once</span>
+
+<span class="kw">#include</span> <span class="str">"Items/RPGItem.h"</span>
+<span class="kw">#include</span> <span class="str">"RPGArmorItem.generated.h"</span>
+
+<span class="cmt">/** Native base class for armor, should be blueprinted */</span>
+<span class="kw">UCLASS</span>()
+<span class="kw">class</span> ACTIONRPG_API <span class="ty">URPGArmorItem</span> : <span class="kw">public</span> <span class="ty">URPGItem</span>
+{
+    GENERATED_BODY()
+
+<span class="kw">public</span>:
+    <span class="cmt">/** Constructor */</span>
+    <span class="fn">URPGArmorItem</span>()
+    {
+        ItemType = <span class="ty">URPGAssetManager</span>::ArmorItemType;   <span class="cmt">// 用下一步要加的新常量</span>
+    }
+};</code></pre>
+<p>这里引用了 <code>URPGAssetManager::ArmorItemType</code>，现在还不存在，等第二步补上。</p>
+
+<span class="anchor" id="p2"></span>
+<h3>第二处：在 RPGAssetManager 加类型常量</h3>
+<p>先在头文件 <code>Source/ActionRPG/Public/RPGAssetManager.h</code> 的静态常量那一组里加一行声明：</p>
+<pre><code><span class="cmt">/** Static types for items */</span>
+<span class="kw">static const</span> <span class="ty">FPrimaryAssetType</span>	PotionItemType;
+<span class="kw">static const</span> <span class="ty">FPrimaryAssetType</span>	SkillItemType;
+<span class="kw">static const</span> <span class="ty">FPrimaryAssetType</span>	TokenItemType;
+<span class="kw">static const</span> <span class="ty">FPrimaryAssetType</span>	WeaponItemType;
+<span class="kw">static const</span> <span class="ty">FPrimaryAssetType</span>	ArmorItemType;   <span class="cmt">// 新增</span></code></pre>
+
+<p>再到 <code>Source/ActionRPG/Private/RPGAssetManager.cpp</code> 里给它定义值：</p>
+<pre><code><span class="kw">const</span> <span class="ty">FPrimaryAssetType</span>	<span class="ty">URPGAssetManager</span>::PotionItemType = <span class="fn">TEXT</span>(<span class="str">"Potion"</span>);
+<span class="kw">const</span> <span class="ty">FPrimaryAssetType</span>	<span class="ty">URPGAssetManager</span>::SkillItemType  = <span class="fn">TEXT</span>(<span class="str">"Skill"</span>);
+<span class="kw">const</span> <span class="ty">FPrimaryAssetType</span>	<span class="ty">URPGAssetManager</span>::TokenItemType  = <span class="fn">TEXT</span>(<span class="str">"Token"</span>);
+<span class="kw">const</span> <span class="ty">FPrimaryAssetType</span>	<span class="ty">URPGAssetManager</span>::WeaponItemType = <span class="fn">TEXT</span>(<span class="str">"Weapon"</span>);
+<span class="kw">const</span> <span class="ty">FPrimaryAssetType</span>	<span class="ty">URPGAssetManager</span>::ArmorItemType  = <span class="fn">TEXT</span>(<span class="str">"Armor"</span>);   <span class="cmt">// 新增</span></code></pre>
+<p>记住这个 <code>"Armor"</code> 字符串，下一步 ini 里要用一模一样的值。</p>
+
+<span class="anchor" id="p3"></span>
+<h3>第三处：在 DefaultGame.ini 加扫描条目</h3>
+<p>这就是我当年漏掉的那处。打开 <code>Config/DefaultGame.ini</code>，在 <code>[/Script/Engine.AssetManagerSettings]</code> 段里照着 Weapon 那条加一行：</p>
+<pre><code>+PrimaryAssetTypesToScan=(PrimaryAssetType=<span class="str">"Armor"</span>,AssetBaseClass=<span class="str">/Script/ActionRPG.RPGArmorItem</span>,bHasBlueprintClasses=False,bIsEditorOnly=False,Directories=((Path=<span class="str">"/Game/Items/Armors"</span>)),SpecificAssets=,Rules=(Priority=-1,bApplyRecursively=True,ChunkId=-1,CookRule=AlwaysCook))</code></pre>
+<p>对照检查三件事：<code>PrimaryAssetType="Armor"</code> 要跟第二步的字符串完全一致；<code>AssetBaseClass</code> 指向第一步的 <code>RPGArmorItem</code>；<code>Directories</code> 指向 <code>/Game/Items/Armors</code>，也就是磁盘上的 <code>Content/Items/Armors</code>，这个目录待会儿在编辑器里建资产时会用到。</p>
+
+<p>三处都改完，重新编译编辑器目标：</p>
+<pre><code>&amp; <span class="str">"&lt;UE_4.27&gt;\Engine\Build\BatchFiles\Build.bat"</span> ActionRPGEditor Win64 Development <span class="str">"&lt;repo&gt;\ActionRPG.uproject"</span> -waitmutex</code></pre>
+
+<span class="anchor" id="editor"></span>
+<h3>到编辑器里建一个 Armor 数据资产</h3>
+<p>编译通过、打开编辑器后：</p>
+<ol>
+  <li>在内容浏览器里进到 <code>Content/Items/</code>，新建一个文件夹 <code>Armors</code>（要和 ini 里的 <code>Directories</code> 路径对上）。</li>
+  <li>在这个文件夹里右键，选 Miscellaneous → Data Asset（不同版本菜单位置略有差别，找"数据资产"就对了）。</li>
+  <li>弹出选类的对话框，搜 <code>RPGArmorItem</code>，选它。能在列表里看到这个类，说明你的 C++ 子类已经被引擎认到了。</li>
+  <li>给资产起个名，比如 <code>Armor_Iron</code>。双击打开，会看到从 <code>URPGItem</code> 继承下来的那些字段：ItemName、ItemDescription、ItemIcon、Price 之类，填几个值。注意 ItemType 那栏是灰的、显示 <code>Armor</code>、改不了，正好印证了它由 C++ 构造函数写死、<code>VisibleAnywhere</code> 只读。</li>
+</ol>
+<p>建好之后，这个 <code>Armor_Iron</code> 的 <code>FPrimaryAssetId</code> 就是 <code>Armor:Armor_Iron</code>，Asset Manager 启动扫描时会把它收进索引。这时候若用 <code>ForceLoadItem</code> 传这个 id，就能把它加载出来了。</p>
+<div class="tip"><b>最直观的验证　</b>如果你故意把第三步那条 ini 删掉再重启编辑器，会发现这个资产虽然文件还在，但资产管理器扫不到它，按 id 加载直接失败。这就是"三处缺一不可"最直观的验证。</div>
+
+<!-- ===================== 七、验收 ===================== -->
+<span class="anchor" id="check"></span>
+<h2>七、验收清单</h2>
+<p>对着学习计划阶段四的验收标准，过一遍下面这些，能讲清楚就算过关：</p>
+<ul>
+  <li>能说清 <code>FPrimaryAssetId</code> 和 <code>FPrimaryAssetType</code> 分别是什么，以及 id 是怎么由 <code>类型 + 资产名</code> 拼出来的（看 <code>URPGItem::GetPrimaryAssetId</code>）。</li>
+  <li>能解释为什么要用 id 而不是裸指针来到处指代物品，这跟移动端的按需加载有什么关系。</li>
+  <li>能说清同步加载（<code>ForceLoadItem</code>，会卡、不持引用）和异步加载各自的适用场合与代价。</li>
+  <li>知道 <code>URPGItem</code> 是抽象基类，四个子类靠在构造函数里设 <code>ItemType</code> 来区分类型，类型字符串常量统一放在 <code>URPGAssetManager</code> 上。</li>
+  <li>理解 <code>DefaultGame.ini</code> 里 <code>PrimaryAssetTypesToScan</code> 每个字段的含义，尤其 <code>Directories</code> 和 <code>CookRule=AlwaysCook</code> 为什么这么设。</li>
+  <li>亲手加完一个新物品类型，三处（C++ 子类、<code>RPGAssetManager</code> 常量、<code>DefaultGame.ini</code> 条目）都改对，并在编辑器里成功建出一个该类型的数据资产。</li>
+</ul>
+<p>做完这一阶段，你对"UE 怎么把成百上千件物品做成数据、又怎么省着内存按需加载"就有谱了。下一阶段会用到这里的 <code>URPGItem</code> 和 <code>FPrimaryAssetId</code>，去看背包系统怎么把它们存起来、又怎么异步持久化到存档。</p>
+
+<p style="margin-top:50px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px;">由 <code>UE基础四-AssetManager与数据资产.md</code> 生成 · 离线可用单文件 HTML · 关系图为本页新增</p>
+</main>
+</div>
+</body>
+</html>

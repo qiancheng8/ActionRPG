@@ -18,6 +18,11 @@ ARPGCharacterBase::ARPGCharacterBase()
 	bAbilitiesInitialized = false;
 }
 
+float ARPGCharacterBase::GetMagicNumber() const
+{
+    return 42.0f;
+}
+
 UAbilitySystemComponent* ARPGCharacterBase::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;

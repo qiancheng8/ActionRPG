@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>从 C++ 转 UE · 系列总览（八篇关系图解）</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a22; --panel2:#1d222c; --line:#2b313d;
+    --fg:#e6e9ef; --muted:#9aa4b2; --accent:#5aa9ff; --accent2:#7ee787;
+    --warn:#ffcc66; --cpp:#ff9d7a; --bp:#a78bfa; --cfg:#7ee787;
+    --code-bg:#11151c; --code-fg:#d6deeb;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    line-height:1.85; font-size:16px;
+  }
+  .wrap{display:flex; max-width:1280px; margin:0 auto;}
+  /* 侧边导航 */
+  nav{
+    position:sticky; top:0; align-self:flex-start; height:100vh; overflow:auto;
+    width:240px; padding:24px 16px; border-right:1px solid var(--line);
+    background:var(--panel); font-size:14px; flex:0 0 240px;
+  }
+  nav h2{font-size:13px; color:var(--muted); letter-spacing:1px; margin:0 0 12px;}
+  nav a{display:block; color:var(--fg); text-decoration:none; padding:6px 10px; border-radius:8px; margin-bottom:2px;}
+  nav a:hover{background:var(--panel2); color:var(--accent);}
+  nav a.sub{padding-left:22px; color:var(--muted); font-size:13px;}
+  main{flex:1; min-width:0; padding:36px 48px 120px;}
+  h1{font-size:30px; line-height:1.4; margin:0 0 8px;}
+  .lead{color:var(--muted); font-size:15px; margin-bottom:28px;}
+  h2{font-size:23px; margin:46px 0 14px; padding-top:10px; border-top:1px solid var(--line);}
+  h3{font-size:18px; margin:30px 0 10px; color:var(--accent);}
+  p{margin:12px 0;}
+  code{font-family:"JetBrains Mono","Consolas",monospace; background:#222836; color:#ffd9a0; padding:1px 6px; border-radius:5px; font-size:.9em;}
+  pre{background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow:auto; margin:16px 0;}
+  pre code{background:none; color:var(--code-fg); padding:0; font-size:13.5px; line-height:1.7;}
+  .cmt{color:#6b7689;}
+  .kw{color:#c792ea;} .ty{color:#82aaff;} .str{color:#c3e88d;} .fn{color:#82d9ff;}
+  table{border-collapse:collapse; width:100%; margin:18px 0; font-size:14.5px;}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left;}
+  th{background:var(--panel2); color:var(--accent);}
+  tr:nth-child(even) td{background:#13171f;}
+  strong{color:#fff;}
+  .tip{border-left:4px solid var(--warn); background:#211d12; padding:12px 16px; border-radius:0 8px 8px 0; margin:18px 0;}
+  .tip b{color:var(--warn);}
+  /* ===== 关系图通用 ===== */
+  .diagram{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; margin:22px 0;}
+  .diagram .cap{font-size:13px; color:var(--muted); margin-bottom:16px; letter-spacing:.5px;}
+  .box{border:1.5px solid var(--line); border-radius:10px; padding:10px 14px; background:var(--panel2); display:inline-block; text-align:center;}
+  .box .t{font-weight:700; font-family:"JetBrains Mono",monospace;}
+  .box .d{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .box.cpp{border-color:var(--cpp);} .box.cpp .t{color:var(--cpp);}
+  .box.bp{border-color:var(--bp);} .box.bp .t{color:var(--bp);}
+  .box.cfg{border-color:var(--cfg);} .box.cfg .t{color:var(--cfg);}
+  .box.engine{border-color:var(--accent);} .box.engine .t{color:var(--accent);}
+  .flow{display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px;}
+  .arr{color:var(--accent); font-size:22px; padding:0 6px; white-space:nowrap;}
+  .arr small{display:block; font-size:11px; color:var(--muted); text-align:center; line-height:1;}
+  .vstack{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .legend{display:flex; gap:18px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:16px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .anchor{position:relative; top:-10px;}
+  /* ===== 本页：可点击节点 + 阶段卡片 ===== */
+  a.box{text-decoration:none; transition:transform .12s, box-shadow .12s; cursor:pointer;}
+  a.box:hover{transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,.4);}
+  .stagecard{border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:16px 18px; margin:14px 0; display:block; text-decoration:none; color:inherit; transition:border-color .12s, transform .12s;}
+  .stagecard:hover{border-color:var(--accent); transform:translateX(3px);}
+  .stagecard .num{display:inline-block; font-family:"JetBrains Mono",monospace; font-weight:700; color:var(--accent); font-size:14px; margin-right:8px;}
+  .stagecard .ttl{font-weight:700; font-size:17px; color:#fff;}
+  .stagecard .desc{color:var(--muted); font-size:14px; margin-top:6px;}
+  .stagecard.gas{border-color:var(--bp);}
+  .stagecard.gas .ttl{color:var(--bp);}
+  .badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; margin-left:8px; vertical-align:middle; font-family:"JetBrains Mono",monospace;}
+  .badge.hard{background:#2a1f3d; color:var(--bp); border:1px solid var(--bp);}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <h2>目录</h2>
+  <a href="#top">开篇 · 这套教程是什么</a>
+  <a href="#how">怎么用这套教程</a>
+  <a href="#roadmap">★ 八篇关系 / 学习路线图</a>
+  <a href="#loop">★ 学习方法闭环图</a>
+  <a href="#toc">目录 · 八个阶段</a>
+  <a href="#s1" class="sub">一、环境与心智模型</a>
+  <a href="#s2" class="sub">二、基类与蓝图分工</a>
+  <a href="#s3" class="sub">三、蓝图与编辑器</a>
+  <a href="#s4" class="sub">四、AssetManager</a>
+  <a href="#s5" class="sub">五、背包与存档</a>
+  <a href="#s6" class="sub">六、GAS 技能系统</a>
+  <a href="#s7" class="sub">七、UI 加载屏与异步</a>
+  <a href="#s8" class="sub">八、打包与毕业项目</a>
+  <a href="#oneline">一句话路线图</a>
+</nav>
+
+<main>
+<span class="anchor" id="top"></span>
+<h1>从 C++ 转 UE：用官方 ActionRPG 示例零基础上手<br><span style="font-size:20px;color:var(--muted)">系列总览 · 八篇怎么串成一条进阶链</span></h1>
+<p class="lead">UE 基础系列 · 首页导航　|　面向写过 C++、但没正经做过 UE 正向开发的读者　|　本页用一张大关系图把八篇串成进阶链，每个节点可点进对应文章。</p>
+
+<p>这是一套写给 C++ 程序员的 Unreal Engine 4.27 入门教程。载体是 Epic 官方的 <strong>ActionRPG</strong> 示例项目，一个能跑起来、能打包上手机的完整动作 RPG。</p>
+<p>如果你写过 C++、但没正经做过 UE 正向开发，这套教程就是为你准备的。我们不从「什么是游戏引擎」这种地方讲起，而是直接拿你能读懂的 C++ 源码当抓手，一步步爬到蓝图、编辑器、技能系统这些 UE 特有的东西上。</p>
+<p>官方文档在这里：<a href="https://dev.epicgames.com/documentation/unreal-engine/action-rpg-game?application_version=4.27" style="color:var(--accent)">dev.epicgames.com / ActionRPG（4.27）</a></p>
+
+<!-- ===================== 怎么用 ===================== -->
+<span class="anchor" id="how"></span>
+<h2>怎么用这套教程</h2>
+<p>八篇按顺序读，每篇对应一个学习阶段，都有动手练习和验收清单。建议你边读边把项目跑起来，<strong>改一点、编译、看效果</strong>，光看不练在 UE 里很容易翻车。完整的进度规划和时间估算见上一级目录的 <code>ActionRPG学习计划.md</code>。</p>
+
+<!-- ===================== 八篇路线图 ===================== -->
+<span class="anchor" id="roadmap"></span>
+<h2>★ 八篇关系 / 学习路线图</h2>
+<p>八个阶段不是平行的，而是一条<strong>层层垒上去的进阶链</strong>：前面是后面的地基。下图每个节点都可点击，直接进对应文章。GAS（阶段六）是整条链上最高、最难啃的那一节。</p>
+
+<div class="diagram">
+  <div class="cap">主线进阶链：从「能跑起来」一路爬到「打出真包」（点击节点进入对应章节）</div>
+  <div class="flow" style="gap:6px;">
+    <a class="box engine" href="UE基础一-环境与引擎心智模型.html"><div class="t">①环境 / 心智模型</div><div class="d">编译·跑通<br>UObject/反射/GC/模块</div></a>
+    <span class="arr">→<small>有了世界观</small></span>
+    <a class="box cpp" href="UE基础二-基类与蓝图子类的分工.html"><div class="t">②基类↔蓝图分工</div><div class="d">追配置链<br>拿到全项目的钥匙</div></a>
+    <span class="arr">→<small>会找锚点</small></span>
+    <a class="box bp" href="UE基础三-蓝图与编辑器工作流.html"><div class="t">③蓝图 / 编辑器</div><div class="d">读蓝图·用编辑器<br>打通 C++↔蓝图往返</div></a>
+  </div>
+  <div class="flow" style="margin:6px 0;">
+    <span class="arr" style="font-size:18px">↓<small>能读会改之后，进入数据与系统层</small></span>
+  </div>
+  <div class="flow" style="gap:6px;">
+    <a class="box cfg" href="UE基础四-AssetManager与数据资产.html"><div class="t">④AssetManager</div><div class="d">数据资产·异步加载<br>「三处必须同步改」</div></a>
+    <span class="arr">→<small>有了数据</small></span>
+    <a class="box bp" href="UE基础五-背包与存档系统.html"><div class="t">⑤背包 / 存档</div><div class="d">权威数据·异步存档<br>delegate 广播变化</div></a>
+    <span class="arr">→<small>背包授予能力</small></span>
+    <a class="box bp gas-node" href="UE基础六-GameplayAbilities技能系统.html" style="border-color:var(--bp);border-width:2.5px;box-shadow:0 0 0 3px rgba(167,139,250,.15);"><div class="t" style="color:var(--bp)">⑥GAS 技能系统 ★</div><div class="d" style="color:var(--bp)">核心 + 最大难点<br>伤害→能力→效果→属性→标签</div></a>
+  </div>
+  <div class="flow" style="margin:6px 0;">
+    <span class="arr" style="font-size:18px">↓<small>核心系统打通后，做表现与交付</small></span>
+  </div>
+  <div class="flow" style="gap:6px;">
+    <a class="box bp" href="UE基础七-UI加载屏与异步.html"><div class="t">⑦UI / 加载屏 / 异步</div><div class="d">UMG 随背包刷新<br>加载屏独立模块·异步加载</div></a>
+    <span class="arr">→<small>收束设计动机</small></span>
+    <a class="box cfg" href="UE基础八-打包平台与毕业项目.html"><div class="t">⑧打包 / 平台 / 毕业</div><div class="d">打真包·上手机<br>「新增一件武器」串全栈</div></a>
+  </div>
+
+  <div class="tip" style="margin-top:20px;">
+    <b>最大难点在阶段六　</b><span style="color:var(--bp)">GameplayAbilities（GAS）</span>是全项目的核心，也是整条链上唯一的「时间黑洞」。<strong>别赶，该停就停。</strong>前面五篇（①～⑤）是为了让你有资格读懂它：①给世界观、②③让你能在 C++ 和蓝图间穿梭、④⑤准备好数据与背包（背包正是 GAS 授予能力的入口）。其余阶段都比它轻松。</p>
+  </div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--accent)"></i>引擎 / 运行时世界观</span>
+    <span><i class="dot" style="background:var(--cpp)"></i>C++（Source/）</span>
+    <span><i class="dot" style="background:var(--bp)"></i>蓝图 / Gameplay（Content/）</span>
+    <span><i class="dot" style="background:var(--cfg)"></i>配置 / 数据 / 交付（.ini · 数据资产 · 打包）</span>
+  </div>
+</div>
+
+<!-- ===================== 学习方法闭环 ===================== -->
+<span class="anchor" id="loop"></span>
+<h2>★ 学习方法闭环图</h2>
+<p>每一篇的正确打开方式都是同一个循环：<strong>先在 C++ 基类找锚点读懂能力 → 去蓝图看怎么装配 → 跑起来观察行为 → 改一点再回头验证</strong>。光看不练在 UE 里必翻车，这个闭环转起来，知识才真正落地。</p>
+
+<div class="diagram">
+  <div class="cap">学习方法闭环：C++ 基类 → 蓝图装配 → 运行观察 → 回头改（循环往复）</div>
+  <div class="flow" style="gap:4px;">
+    <div class="vstack">
+      <div class="box cpp" style="min-width:160px"><div class="t">① 读 C++ 基类</div><div class="d">在 Source/ 找 RPG*Base<br>看「定义了什么能力」</div></div>
+    </div>
+    <span class="arr">→<small>基类是锚点</small></span>
+    <div class="vstack">
+      <div class="box bp" style="min-width:160px"><div class="t">② 看蓝图装配</div><div class="d">在 Content/ 找 BP_*<br>看「数据和调参怎么填」</div></div>
+    </div>
+    <span class="arr">→<small>编译·运行</small></span>
+    <div class="vstack">
+      <div class="box engine" style="min-width:160px"><div class="t">③ 运行观察</div><div class="d">PIE 跑起来<br>看行为对不对、断点验证</div></div>
+    </div>
+    <span class="arr">↺<small>改一点<br>回到 ①／②</small></span>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:16px 0 0;">关键心法：<strong style="color:var(--cpp)">C++ 定义「能力」</strong>，<strong style="color:var(--bp)">蓝图装配「数据与调参」</strong>，<strong style="color:var(--accent)">运行时验证两者拼起来对不对</strong>。锚点找对，后面的 AssetManager、背包、GAS 才不会读得一头雾水。</p>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--cpp)"></i>读能力（C++）</span>
+    <span><i class="dot" style="background:var(--bp)"></i>看装配（蓝图）</span>
+    <span><i class="dot" style="background:var(--accent)"></i>跑起来观察（引擎）</span>
+  </div>
+</div>
+
+<!-- ===================== 目录 ===================== -->
+<span class="anchor" id="toc"></span>
+<h2>目录 · 八个阶段</h2>
+<p>按顺序读，点卡片进入对应文章。每篇都配动手练习和验收清单。</p>
+
+<span class="anchor" id="s1"></span>
+<a class="stagecard" href="UE基础一-环境与引擎心智模型.html">
+  <div><span class="num">阶段一</span><span class="ttl">环境与引擎心智模型</span></div>
+  <div class="desc">编译、打开、跑起来，建立 UObject / 反射 / GC / 宏 / 模块这套 UE 世界观。</div>
+</a>
+
+<span class="anchor" id="s2"></span>
+<a class="stagecard" href="UE基础二-基类与蓝图子类的分工.html">
+  <div><span class="num">阶段二</span><span class="ttl">基类与蓝图子类的分工</span></div>
+  <div class="desc">UE 最反直觉的一点：C++ 基类几乎不直接用，而是被蓝图继承后在配置里引用。读懂这条配置链，就拿到了全项目的钥匙。</div>
+</a>
+
+<span class="anchor" id="s3"></span>
+<a class="stagecard" href="UE基础三-蓝图与编辑器工作流.html">
+  <div><span class="num">阶段三</span><span class="ttl">蓝图与编辑器工作流</span></div>
+  <div class="desc">C++ 程序员最想跳过、却最该补的一课。学会读蓝图、用编辑器，打通 C++ 和蓝图的往返。</div>
+</a>
+
+<span class="anchor" id="s4"></span>
+<a class="stagecard" href="UE基础四-AssetManager与数据资产.html">
+  <div><span class="num">阶段四</span><span class="ttl">Asset Manager 与数据资产</span></div>
+  <div class="desc">物品怎么组织、怎么按需异步加载。动手加一个新物品类型，踩一遍「三处必须同步改」的坑。</div>
+</a>
+
+<span class="anchor" id="s5"></span>
+<a class="stagecard" href="UE基础五-背包与存档系统.html">
+  <div><span class="num">阶段五</span><span class="ttl">背包与存档系统</span></div>
+  <div class="desc">背包数据存哪、谁是权威、怎么异步存档、怎么用 delegate 广播变化。</div>
+</a>
+
+<span class="anchor" id="s6"></span>
+<a class="stagecard gas" href="UE基础六-GameplayAbilities技能系统.html">
+  <div><span class="num">阶段六</span><span class="ttl">GameplayAbilities 技能系统</span><span class="badge hard">最大难点 ★</span></div>
+  <div class="desc">全项目的核心和最大难点。从最好懂的伤害管线切入，一路讲到能力、效果、属性、标签和物品授予能力。<strong style="color:var(--bp)">最大的时间黑洞，别赶，该停就停。</strong></div>
+</a>
+
+<span class="anchor" id="s7"></span>
+<a class="stagecard" href="UE基础七-UI加载屏与异步.html">
+  <div><span class="num">阶段七</span><span class="ttl">UI、加载屏与异步</span></div>
+  <div class="desc">UMG 界面怎么随背包数据自动刷新，加载屏为什么要做成独立模块，移动端为什么离不开异步加载。</div>
+</a>
+
+<span class="anchor" id="s8"></span>
+<a class="stagecard" href="UE基础八-打包平台与毕业项目.html">
+  <div><span class="num">阶段八</span><span class="ttl">打包、平台与毕业项目</span></div>
+  <div class="desc">打一个真包出来，把前七篇的设计动机收束到「因为要上手机」。最后用「新增一件武器」的毕业项目串起全栈。</div>
+</a>
+
+<!-- ===================== 一句话路线图 ===================== -->
+<span class="anchor" id="oneline"></span>
+<h2>一句话路线图</h2>
+<p style="font-size:17px;line-height:2.2;">
+  环境跑通 <span class="arr" style="font-size:16px">→</span>
+  看懂「基类被蓝图化」的架构 <span class="arr" style="font-size:16px">→</span>
+  能读蓝图 <span class="arr" style="font-size:16px">→</span>
+  数据资产 <span class="arr" style="font-size:16px">→</span>
+  背包存档 <span class="arr" style="font-size:16px">→</span>
+  <strong style="color:var(--bp)">啃下 GAS</strong> <span class="arr" style="font-size:16px">→</span>
+  UI 与异步 <span class="arr" style="font-size:16px">→</span>
+  打包 + 毕业项目。
+</p>
+<div class="tip"><b>提醒　</b>GAS（阶段六）是最大的时间黑洞，别赶，该停就停。其余阶段都比它轻松。</div>
+
+<p style="margin-top:50px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px;">由 <code>00-系列总览.md</code> 生成 · 离线可用单文件 HTML · 关系图为本页新增 · 节点链接指向同目录各篇 HTML</p>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UE 基础二 · 基类被蓝图化的把戏（知识点关系图解）</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a22; --panel2:#1d222c; --line:#2b313d;
+    --fg:#e6e9ef; --muted:#9aa4b2; --accent:#5aa9ff; --accent2:#7ee787;
+    --warn:#ffcc66; --cpp:#ff9d7a; --bp:#a78bfa; --cfg:#7ee787;
+    --code-bg:#11151c; --code-fg:#d6deeb;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    line-height:1.85; font-size:16px;
+  }
+  .wrap{display:flex; max-width:1280px; margin:0 auto;}
+  /* 侧边导航 */
+  nav{
+    position:sticky; top:0; align-self:flex-start; height:100vh; overflow:auto;
+    width:240px; padding:24px 16px; border-right:1px solid var(--line);
+    background:var(--panel); font-size:14px; flex:0 0 240px;
+  }
+  nav h2{font-size:13px; color:var(--muted); letter-spacing:1px; margin:0 0 12px;}
+  nav a{display:block; color:var(--fg); text-decoration:none; padding:6px 10px; border-radius:8px; margin-bottom:2px;}
+  nav a:hover{background:var(--panel2); color:var(--accent);}
+  nav a.sub{padding-left:22px; color:var(--muted); font-size:13px;}
+  main{flex:1; min-width:0; padding:36px 48px 120px;}
+  h1{font-size:30px; line-height:1.4; margin:0 0 8px;}
+  .lead{color:var(--muted); font-size:15px; margin-bottom:28px;}
+  h2{font-size:23px; margin:46px 0 14px; padding-top:10px; border-top:1px solid var(--line);}
+  h3{font-size:18px; margin:30px 0 10px; color:var(--accent);}
+  p{margin:12px 0;}
+  code{font-family:"JetBrains Mono","Consolas",monospace; background:#222836; color:#ffd9a0; padding:1px 6px; border-radius:5px; font-size:.9em;}
+  pre{background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow:auto; margin:16px 0;}
+  pre code{background:none; color:var(--code-fg); padding:0; font-size:13.5px; line-height:1.7;}
+  .cmt{color:#6b7689;}
+  .kw{color:#c792ea;} .ty{color:#82aaff;} .str{color:#c3e88d;} .fn{color:#82d9ff;}
+  table{border-collapse:collapse; width:100%; margin:18px 0; font-size:14.5px;}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left;}
+  th{background:var(--panel2); color:var(--accent);}
+  tr:nth-child(even) td{background:#13171f;}
+  strong{color:#fff;}
+  .tip{border-left:4px solid var(--warn); background:#211d12; padding:12px 16px; border-radius:0 8px 8px 0; margin:18px 0;}
+  .tip b{color:var(--warn);}
+  /* ===== 关系图通用 ===== */
+  .diagram{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; margin:22px 0;}
+  .diagram .cap{font-size:13px; color:var(--muted); margin-bottom:16px; letter-spacing:.5px;}
+  .box{border:1.5px solid var(--line); border-radius:10px; padding:10px 14px; background:var(--panel2); display:inline-block; text-align:center;}
+  .box .t{font-weight:700; font-family:"JetBrains Mono",monospace;}
+  .box .d{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .box.cpp{border-color:var(--cpp);} .box.cpp .t{color:var(--cpp);}
+  .box.bp{border-color:var(--bp);} .box.bp .t{color:var(--bp);}
+  .box.cfg{border-color:var(--cfg);} .box.cfg .t{color:var(--cfg);}
+  .box.engine{border-color:var(--accent);} .box.engine .t{color:var(--accent);}
+  .flow{display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px;}
+  .arr{color:var(--accent); font-size:22px; padding:0 6px; white-space:nowrap;}
+  .arr small{display:block; font-size:11px; color:var(--muted); text-align:center; line-height:1;}
+  .vstack{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .legend{display:flex; gap:18px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:16px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .anchor{position:relative; top:-10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <h2>目录</h2>
+  <a href="#top">开篇 · 跑的为什么是蓝图</a>
+  <a href="#map">★ 知识点关系总图</a>
+  <a href="#chain">一、追一条配置链</a>
+  <a href="#basic" >二、路径 / BP_ / _C</a>
+  <a href="#path" class="sub">路径格式 包.对象</a>
+  <a href="#root" class="sub">/Game 与 /Script</a>
+  <a href="#bp" class="sub">BP_ 前缀</a>
+  <a href="#c" class="sub">_C 后缀</a>
+  <a href="#bridge">三、两座桥</a>
+  <a href="#types">四、RPGTypes.h 枢纽</a>
+  <a href="#mind">五、心智转变</a>
+  <a href="#check">六、验收清单</a>
+</nav>
+
+<main>
+<span class="anchor" id="top"></span>
+<h1>C++ 写好了类，引擎却跑的是蓝图<br>看懂 UE 这套「基类被蓝图化」的把戏</h1>
+<p class="lead">UE 基础 · 第二阶段　|　面向有 C++ 底子、零 UE 正向开发经验的读者　|　本页在原文基础上加了一组关系图，帮你把零散知识点串成一张网。</p>
+
+<p>刚从纯 C++ 转过来做 UE 的人，几乎都会被同一件事绊倒：你在 <code>Source/</code> 里翻到一个写得有模有样的 <code>ARPGGameModeBase</code>，满心以为引擎跑的就是它，结果运行起来根本不走你的断点。配置文件里引用的压根不是这个 C++ 类，而是一个叫 <code>BP_GameMode_C</code> 的东西。</p>
+<p>这不是哪里配错了。这就是 UE 正向开发里最核心、也最反直觉的一条惯例：C++ 基类几乎从不直接拿来用，它存在的意义是被某个蓝图继承，然后引擎在配置里引用那个蓝图子类。本篇用 ActionRPG 这个官方示例，带你把这条链子从配置文件一路追到 C++ 头文件。</p>
+
+<!-- ===================== 关系总图 ===================== -->
+<span class="anchor" id="map"></span>
+<h2>★ 先看一张图：这一篇的知识点怎么串起来</h2>
+<p>下面几个概念其实是一条因果链上的环。先扫一眼整体，后面每节再放大看局部。</p>
+
+<div class="diagram">
+  <div class="cap">核心关系：配置文件 → 蓝图子类 → C++ 基类（引擎实际运行的是中间那层）</div>
+  <div class="flow">
+    <div class="box cfg"><div class="t">DefaultEngine.ini</div><div class="d">配置：指定用谁</div></div>
+    <span class="arr">→<small>字符串路径引用</small></span>
+    <div class="box bp"><div class="t">BP_GameMode_C</div><div class="d">蓝图子类 · 装配数据</div></div>
+    <span class="arr">→<small>继承 extends</small></span>
+    <div class="box cpp"><div class="t">ARPGGameModeBase</div><div class="d">C++ 基类 · 定义能力</div></div>
+  </div>
+  <div class="flow" style="margin-top:14px;">
+    <div class="box engine" style="border-style:dashed;"><div class="t">引擎运行时</div><div class="d">实例化的是 BP_GameMode_C，但行为=基类骨架+蓝图装配</div></div>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--cfg)"></i>配置（.ini）</span>
+    <span><i class="dot" style="background:var(--bp)"></i>蓝图（Content/）</span>
+    <span><i class="dot" style="background:var(--cpp)"></i>C++（Source/）</span>
+    <span><i class="dot" style="background:var(--accent)"></i>引擎运行时</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <div class="cap">由核心关系派生出的四个细节问题，正好是后面四节</div>
+  <div class="flow" style="gap:14px;">
+    <div class="vstack">
+      <div class="box bp"><div class="t">那串路径怎么读？</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">第二节：包.对象 / 根目录 / _C</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box"><div class="t">C++ 和蓝图怎么互相调？</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">第三节：两座方向相反的桥</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box"><div class="t">共享类型放哪？</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">第四节：RPGTypes.h 打破循环依赖</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box"><div class="t">该把逻辑写哪？</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">第五节：C++ 定能力 / 蓝图装数据</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 一、配置链 ===================== -->
+<span class="anchor" id="chain"></span>
+<h2>一、先追一条真实的配置链</h2>
+<p>打开 <code>Config/DefaultEngine.ini</code>，有三行是这套架构的活样本：</p>
+<pre><code><span class="cmt">[/Script/EngineSettings.GameMapsSettings]</span>
+GameInstanceClass=<span class="str">/Game/Blueprints/BP_GameInstance.BP_GameInstance_C</span>
+GlobalDefaultGameMode=<span class="str">/Game/Blueprints/BP_GameMode.BP_GameMode_C</span>
+
+<span class="cmt">[/Script/Engine.Engine]</span>
+AssetManagerClassName=<span class="str">/Script/ActionRPG.RPGAssetManager</span></code></pre>
+
+<p>这三行里藏着两种完全不同的路径写法，对比着看意思就清楚了：</p>
+<table>
+  <tr><th>配置项</th><th>引擎实际用的类</th><th>它是什么</th><th>对应 C++ 基类</th></tr>
+  <tr><td><code>GameInstanceClass</code></td><td><code>BP_GameInstance_C</code></td><td>蓝图子类</td><td><code>URPGGameInstanceBase</code></td></tr>
+  <tr><td><code>GlobalDefaultGameMode</code></td><td><code>BP_GameMode_C</code></td><td>蓝图子类</td><td><code>ARPGGameModeBase</code></td></tr>
+  <tr><td><code>AssetManagerClassName</code></td><td><code>RPGAssetManager</code></td><td>C++ 原生类</td><td>自己（无蓝图）</td></tr>
+</table>
+<p>GameMode 和 GameInstance 走「C++ 基类 + 蓝图子类」两层结构，引擎引用蓝图那一层。AssetManager 例外，直接用 C++ 类。</p>
+<p>为什么 AssetManager 不套一层蓝图？因为它干的是资产扫描、按需异步加载这类纯逻辑活，没有需要设计师在编辑器里调的参数，也没有需要可视化连线的事件。套蓝图纯属浪费。而 GameMode、GameInstance 这类，设计师经常要往上挂数据、接事件流（默认背包配置、游戏结束弹什么 UI），所以留了蓝图子类这层给非程序员去装配。</p>
+<div class="tip"><b>判断标准　</b>有没有给设计师留装配空间，决定了它要不要被蓝图化。</div>
+
+<!-- ===================== 二、基础 ===================== -->
+<span class="anchor" id="basic"></span>
+<h2>二、插一段基础：那串路径、<code>BP_</code> 和 <code>_C</code> 到底是什么</h2>
+<p>上面这几行配置对老手是常识，但第一次见的人多半一脸懵。这一节专门把它们拆开讲清楚，后面看满屏这种路径就不慌了。</p>
+
+<span class="anchor" id="path"></span>
+<h3>路径的通用格式：<code>包路径.对象名</code></h3>
+<p>UE 用一种叫「对象路径」的字符串来引用资产或类。关键是中间那个<strong>英文句点</strong>，它把整条路径切成两半。</p>
+
+<div class="diagram">
+  <div class="cap">把 /Game/Blueprints/BP_GameMode.BP_GameMode_C 沿句点切开</div>
+  <div class="flow">
+    <div class="box"><div class="t" style="color:var(--cfg)">/Game/Blueprints/BP_GameMode</div><div class="d">句点左边 = 包路径<br>指向一个文件（.uasset）</div></div>
+    <span class="arr" style="font-size:30px;color:var(--warn)">. </span>
+    <div class="box"><div class="t" style="color:var(--bp)">BP_GameMode_C</div><div class="d">句点右边 = 对象名<br>指向文件「内部」的对象</div></div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;">读作：在 <code>/Game/Blueprints/BP_GameMode</code> 这个文件里，找名叫 <code>BP_GameMode_C</code> 的对象</p>
+</div>
+
+<p>为什么左右两边长得几乎一样？因为 UE 的资产文件一般只装一个「主对象」，且默认跟文件同名。文件叫 <code>BP_GameMode</code>，里面那个蓝图主对象也叫 <code>BP_GameMode</code>，我们要的是它编译出来的类 <code>BP_GameMode_C</code>。所以才出现「文件名.类名」这种看着重复的写法。</p>
+
+<span class="anchor" id="root"></span>
+<h3>两个虚拟根：<code>/Game</code> 和 <code>/Script</code></h3>
+<p>路径开头那个 <code>/Game</code> 或 <code>/Script</code>，是 UE 给不同来源的东西安排的虚拟根，跟磁盘真实路径不是一回事。</p>
+
+<div class="diagram">
+  <div class="cap">看路径开头，立刻知道这东西的来源</div>
+  <div class="flow" style="gap:10px;">
+    <div class="vstack">
+      <div class="box cfg"><div class="t">/Game</div></div>
+      <span class="arr" style="font-size:16px">↓ 映射</span>
+      <div class="box"><div class="d"><code>Content/</code> 文件夹<br>策划做的资产</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box cpp"><div class="t">/Script</div></div>
+      <span class="arr" style="font-size:16px">↓ 映射</span>
+      <div class="box"><div class="d"><code>Source/</code> C++ 模块<br>程序写的类</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box engine"><div class="t">/Engine</div></div>
+      <span class="arr" style="font-size:16px">↓ 映射</span>
+      <div class="box"><div class="d">引擎自带内容<br>官方示例/默认资源</div></div>
+    </div>
+  </div>
+</div>
+
+<p>换算关系很直接：<code>/Game/Blueprints/BP_GameMode</code> ←→ <code>Content/Blueprints/BP_GameMode.uasset</code>。</p>
+<p>而 <code>/Script</code> 后面跟的是「模块名.类名」：</p>
+<pre><code>/Script/ActionRPG.RPGAssetManager
+         <span class="cmt">↑          ↑</span>
+       <span class="cmt">模块名      C++ 类名（去掉 U/A 前缀）</span></code></pre>
+<p>注意类名<strong>不带</strong> <code>U</code> 前缀：头文件里是 <code>URPGAssetManager</code>，路径里写 <code>RPGAssetManager</code>。UE 对象路径不带 <code>U</code>/<code>A</code> 这种 C++ 前缀。</p>
+
+<span class="anchor" id="bp"></span>
+<h3><code>BP_</code> 前缀：只是个命名约定</h3>
+<p><code>BP_</code> 没有任何语法含义，纯粹是习惯，<code>BP</code> 就是 Blueprint 的缩写。引擎不强制，但所有人都这么写，为的是一眼区分蓝图资产和别的东西。顺手记几个常见前缀：</p>
+<table>
+  <tr><th>前缀</th><th>含义</th><th>例子</th></tr>
+  <tr><td><code>BP_</code></td><td>蓝图</td><td><code>BP_GameMode</code></td></tr>
+  <tr><td><code>WBP_</code></td><td>UMG 控件蓝图</td><td><code>WBP_Inventory</code></td></tr>
+  <tr><td><code>SM_</code></td><td>静态网格</td><td><code>SM_Rock</code></td></tr>
+  <tr><td><code>SK_</code></td><td>骨骼网格</td><td><code>SK_Player</code></td></tr>
+  <tr><td><code>M_</code> / <code>MI_</code></td><td>材质 / 材质实例</td><td><code>M_Floor</code></td></tr>
+  <tr><td><code>T_</code></td><td>贴图</td><td><code>T_Icon_Potion</code></td></tr>
+  <tr><td><code>DA_</code></td><td>数据资产</td><td><code>DA_Potion_Health</code></td></tr>
+</table>
+<p>这跟 C++ 那套 <code>U</code>/<code>A</code>/<code>F</code>/<code>I</code> 前缀是两个体系：C++ 前缀给代码看，资产前缀给编辑器里的人看。</p>
+
+<span class="anchor" id="c"></span>
+<h3><code>_C</code> 后缀：蓝图资产和它编译出的类，是两个东西</h3>
+<p>这是最容易被忽略、却最该搞懂的点。一个蓝图资产内部不止一个对象。拿 <code>BP_GameMode</code> 举例，它至少装着两样东西：</p>
+
+<div class="diagram">
+  <div class="cap">一个 .uasset 文件里的两个关键对象</div>
+  <div class="vstack" style="align-items:stretch;gap:10px;">
+    <div class="box" style="border-color:var(--cfg);text-align:left;"><div class="t" style="color:var(--cfg)">BP_GameMode.uasset（文件 / 包）</div></div>
+    <div class="flow" style="gap:20px;">
+      <div class="box bp" style="max-width:300px"><div class="t">BP_GameMode</div><div class="d">类型 <code>UBlueprint</code><br>📐 图纸：编辑器里连节点的设计稿<br>只在编辑期有意义</div></div>
+      <div class="box cpp" style="max-width:300px;border-color:var(--accent2)"><div class="t" style="color:var(--accent2)">BP_GameMode_C</div><div class="d">类型 <code>UClass</code><br>🏭 模具：运行时拿来 new 实例的类<br>配置/代码引用的就是它</div></div>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;"><code>_C</code> = Class，引擎给蓝图生成类自动加的后缀</p>
+</div>
+
+<p>打个比方：<code>BP_GameMode</code> 是图纸，<code>BP_GameMode_C</code> 是按图纸造出来的模具，游戏里每个实例都是这个模具压出来的。引擎运行时要的是模具，所以配置里写带 <code>_C</code> 的。写成不带 <code>_C</code> 的，引擎拿到的是图纸而非模具，实例化会失败。</p>
+
+<table>
+  <tr><th>场景</th><th>要不要写 <code>_C</code></th><th>说明</th></tr>
+  <tr><td>配置文件 <code>.ini</code></td><td>✅ 要带</td><td>引用「可实例化的类」，如 <code>BP_GameMode_C</code></td></tr>
+  <tr><td>C++ 代码里引用类</td><td>✅ 要带</td><td>本质是引用那个生成的 <code>UClass</code></td></tr>
+  <tr><td>编辑器下拉框选蓝图</td><td>❌ 不用</td><td>选 <code>BP_GameMode</code>，引擎背后帮你补 <code>_C</code></td></tr>
+</table>
+<p>C++ 里这俩对象对应两套加载函数：<code>LoadObject</code> 加载 <code>BP_GameMode</code> 拿到图纸（<code>UBlueprint</code>）；<code>LoadClass</code>（或引用 <code>BP_GameMode_C</code>）拿到模具（<code>UClass</code>）。平时跑游戏要的几乎都是后者。</p>
+
+<!-- ===================== 三、两座桥 ===================== -->
+<span class="anchor" id="bridge"></span>
+<h2>三、两座方向相反的桥：C++ 和蓝图怎么互调</h2>
+<p>先看 C++ 基类，<code>Source/ActionRPG/Public/RPGGameModeBase.h</code> 整个就这么点：</p>
+<pre><code><span class="kw">UCLASS</span>()
+<span class="kw">class</span> ACTIONRPG_API <span class="ty">ARPGGameModeBase</span> : <span class="kw">public</span> <span class="ty">AGameModeBase</span>
+{
+    GENERATED_BODY()
+<span class="kw">public</span>:
+    ARPGGameModeBase();
+
+    <span class="kw">virtual void</span> <span class="fn">ResetLevel</span>() <span class="kw">override</span>;
+    <span class="kw">virtual bool</span> <span class="fn">HasMatchEnded</span>() <span class="kw">const override</span>;
+
+    <span class="cmt">/** 游戏结束时调用，比如玩家死了、时间到了 */</span>
+    <span class="kw">UFUNCTION</span>(<span class="ty">BlueprintCallable</span>, Category=Game)
+    <span class="kw">virtual void</span> <span class="fn">GameOver</span>();
+
+<span class="kw">protected</span>:
+    <span class="cmt">// 注意这两个：声明在 C++，实现留给蓝图</span>
+    <span class="kw">UFUNCTION</span>(<span class="ty">BlueprintImplementableEvent</span>, Category=Game, meta=(DisplayName=<span class="str">"DoRestart"</span>))
+    <span class="kw">void</span> <span class="fn">K2_DoRestart</span>();
+
+    <span class="kw">UFUNCTION</span>(<span class="ty">BlueprintImplementableEvent</span>, Category=Game, meta=(DisplayName=<span class="str">"OnGameOver"</span>))
+    <span class="kw">void</span> <span class="fn">K2_OnGameOver</span>();
+
+    <span class="kw">UPROPERTY</span>(BlueprintReadOnly, Category=Game)
+    <span class="kw">uint32</span> bGameOver : <span class="ty">1</span>;
+};</code></pre>
+<p>C++ 这边只定了骨架：状态位 <code>bGameOver</code>、一个能被外部调用的 <code>GameOver()</code>、两个空壳事件。游戏结束后画面怎么变、重开怎么处理，C++ 一字没写，全留给 <code>BP_GameMode</code> 用节点连。这就引出 C++ 和蓝图之间那两条方向相反的桥。</p>
+
+<div class="diagram">
+  <div class="cap">同一个头文件里，两座桥的方向正好相反</div>
+  <div class="flow" style="margin-bottom:18px;">
+    <div class="box cpp"><div class="t">C++ 基类</div><div class="d">ARPGGameModeBase</div></div>
+    <span class="arr" style="color:var(--bp)">──▶<small>BlueprintImplementableEvent<br>C++ 声明空壳 · C++ 触发调用</small></span>
+    <div class="box bp"><div class="t">蓝图</div><div class="d">写实现：弹结算UI、播音效</div></div>
+  </div>
+  <div class="flow">
+    <div class="box cpp"><div class="t">C++ 实现</div><div class="d">GameOver() 写好逻辑</div></div>
+    <span class="arr" style="color:var(--accent2)">◀──<small>BlueprintCallable<br>蓝图把它当节点拖出来调</small></span>
+    <div class="box bp"><div class="t">蓝图</div><div class="d">血量归零 → 拉 GameOver 节点</div></div>
+  </div>
+  <table style="margin-top:18px;">
+    <tr><th></th><th>BlueprintImplementableEvent</th><th>BlueprintCallable</th></tr>
+    <tr><td>谁声明</td><td>C++</td><td>C++</td></tr>
+    <tr><td>谁写实现</td><td><span style="color:var(--bp)">蓝图（图表里）</span></td><td><span style="color:var(--cpp)">C++（.cpp 里）</span></td></tr>
+    <tr><td>谁来调用</td><td>C++</td><td>蓝图</td></tr>
+    <tr><td>一句话</td><td>C++ 向蓝图<strong>要</strong>实现（回调钩子）</td><td>C++ 给蓝图<strong>提供</strong>能力</td></tr>
+  </table>
+</div>
+
+<p><code>K2_</code> 前缀是 UE 惯例（K2 = Kismet 2，蓝图系统内部代号），配合 <code>meta=(DisplayName="OnGameOver")</code>，蓝图里看到的节点名是干净的 <code>OnGameOver</code>。</p>
+<div class="tip"><b>踩过的坑　</b><code>BlueprintImplementableEvent</code> 的函数<strong>不能</strong>在 <code>.cpp</code> 里写实现，写了会报重复定义。如果你既想给 C++ 默认实现、又允许蓝图覆盖，要用 <code>BlueprintNativeEvent</code>，实现写在 <code>_Implementation</code> 后缀的函数里。这俩别搞混。</div>
+
+<!-- ===================== 四、RPGTypes ===================== -->
+<span class="anchor" id="types"></span>
+<h2>四、RPGTypes.h 为什么把一堆东西堆在一起</h2>
+<p>翻到 <code>Source/ActionRPG/Public/RPGTypes.h</code>，它有点怪：没有完整的类，塞的全是结构体和一长串 delegate 声明。文件头注释写得很直白：</p>
+<pre><code><span class="cmt">// This header is for enums and structs used by classes and blueprints accross the game
+// Collecting these in a single header helps avoid problems with recursive header includes</span></code></pre>
+<p>意思是：这里集中放全游戏跨类共享的 enum 和 struct，集中放是为了躲开头文件递归 include 的麻烦。</p>
+
+<div class="diagram">
+  <div class="cap">左：没有 RPGTypes 时容易绕成环　|　右：抽出公共底座，依赖变单向</div>
+  <div class="flow" style="gap:50px; align-items:flex-start;">
+    <div class="vstack">
+      <div class="flow">
+        <div class="box cpp"><div class="t">RPGItem.h</div></div>
+        <span class="arr" style="color:#ff6b6b">⇄</span>
+        <div class="box cpp"><div class="t">PlayerController.h</div></div>
+      </div>
+      <div style="color:#ff6b6b;font-size:13px;margin-top:8px;">❌ 你引我、我引你 → 循环依赖编译报错</div>
+    </div>
+    <div class="vstack">
+      <div class="flow" style="gap:6px;">
+        <div class="box cpp"><div class="t">RPGItem.h</div></div>
+        <div class="box cpp"><div class="t">Controller.h</div></div>
+        <div class="box cpp"><div class="t">Character.h</div></div>
+      </div>
+      <span class="arr" style="font-size:18px">↓ ↓ ↓ 都单向 include</span>
+      <div class="box" style="border-color:var(--accent2)"><div class="t" style="color:var(--accent2)">RPGTypes.h</div><div class="d">公共底座 · 自己几乎不 include 别人</div></div>
+      <div style="color:var(--accent2);font-size:13px;margin-top:8px;">✅ 依赖单向，无环</div>
+    </div>
+  </div>
+</div>
+
+<p>UE 这种重度依赖头文件和代码生成（每个 <code>UCLASS</code>/<code>USTRUCT</code> 都生成 <code>.generated.h</code>）的项目，循环依赖问题被放大得很厉害。解法就是把「大家都要、谁也离不开」的基础类型抽出来，单放进一个谁都能安全 include、自己却几乎不 include 别人的头文件。</p>
+<p>里面那些 delegate 还藏着本项目一个贯穿始终的约定，每个变化都成对声明 dynamic 和 native 两个版本：</p>
+<pre><code><span class="cmt">// 动态版：蓝图能绑定，慢一点</span>
+<span class="kw">DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams</span>(<span class="ty">FOnInventoryItemChanged</span>, bool, bAdded, URPGItem*, Item);
+<span class="cmt">// 原生版：纯 C++，快</span>
+<span class="kw">DECLARE_MULTICAST_DELEGATE_TwoParams</span>(<span class="ty">FOnInventoryItemChangedNative</span>, bool, URPGItem*);</code></pre>
+
+<div class="diagram">
+  <div class="cap">同一个事件，两个版本各管一边（第五阶段会反复见到）</div>
+  <div class="flow">
+    <div class="box bp"><div class="t">…ItemChanged</div><div class="d">DYNAMIC · 支持蓝图绑定、可序列化<br>走反射，慢</div></div>
+    <span class="arr" style="font-size:16px">同一变化，成对发</span>
+    <div class="box cpp"><div class="t">…ItemChangedNative</div><div class="d">纯 C++ 委托 · 只能 C++ 绑<br>不走反射，快</div></div>
+  </div>
+</div>
+<p>新增任何跨类共享的 struct 或 delegate，按项目约定都该往这个文件放，别散落到各个类的头文件里。</p>
+
+<!-- ===================== 五、心智 ===================== -->
+<span class="anchor" id="mind"></span>
+<h2>五、给 C++ 程序员的心智转变</h2>
+<p>从纯 C++ 过来，最该调的观念是：<strong>C++ 定义「能力」，蓝图装配「数据与调参」。</strong></p>
+
+<div class="diagram">
+  <div class="cap">同一个 GameMode，职责怎么分</div>
+  <div class="flow" style="gap:30px; align-items:flex-start;">
+    <div class="vstack">
+      <div class="box cpp" style="min-width:200px"><div class="t">C++ 基类</div><div class="d">类骨架 · 算法 · 性能敏感循环<br>和引擎底层打交道</div></div>
+      <div style="color:var(--cpp);font-size:13px">提供 GameOver / bGameOver / 事件钩子</div>
+    </div>
+    <div class="vstack">
+      <div class="box bp" style="min-width:200px"><div class="t">蓝图子类</div><div class="d">用哪个网格 · 默认放几瓶药<br>弹哪个 UI · 公式系数填多少</div></div>
+      <div style="color:var(--bp);font-size:13px">把行为真正装配出来</div>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;">基类是引擎，蓝图是仪表盘。一个数值、一个表现都没写死在 C++ 里。</p>
+</div>
+
+<p>承认蓝图的地位，你才读得动这个项目。ActionRPG 一多半的 gameplay 逻辑都在 <code>Content/</code> 的蓝图里，你抗拒它，就等于自废一半视力。</p>
+
+<!-- ===================== 六、验收 ===================== -->
+<span class="anchor" id="check"></span>
+<h2>六、验收清单</h2>
+<p>学完这阶段，拿下面几条自测，能答上来就算过了。</p>
+<ol>
+  <li><strong>看到 <code>RPG*Base</code> 类</strong>，立刻反应过来名字里的 <code>Base</code> 就是在喊「我是基类，别直接用」。它八成有个 <code>BP_*</code> 子类躺在 <code>Content/</code>，引擎用的是子类。验证：内容浏览器搜 <code>BP_</code>，右键蓝图选 Class Settings 看 Parent Class。</li>
+  <li><strong>看到一个 <code>UFUNCTION</code></strong>，能凭 specifier 判断调用方向：<code>BlueprintImplementableEvent</code> 是 C++ 声明、蓝图实现、C++ 调；<code>BlueprintCallable</code> 是 C++ 实现、蓝图调。前者实现在蓝图图表，后者在 <code>.cpp</code>。</li>
+  <li><strong>被问为什么共享类型堆在 <code>RPGTypes.h</code></strong>，能答出「打断头文件循环依赖，统一存放跨类的 enum、struct 和全部 delegate 声明」。</li>
+  <li><strong>看到一串对象路径</strong>，能拆出包路径与对象名，认出 <code>/Game</code>（资产）/ <code>/Script</code>（C++）/ <code>/Engine</code>（引擎）三个根，并解释 <code>_C</code> 是蓝图编译出的运行时类。</li>
+</ol>
+<p>这几条通了，这套「基类被蓝图继承、引擎引用子类」的架构你就真懂了。它是后面每个阶段的入口套路：先在 <code>Source/</code> 里找 <code>RPG*Base</code> 当锚点读懂能力，再去 <code>Content/</code> 找 <code>BP_*</code> 看装配。锚点找对了，后面的 Asset Manager、背包、GAS 才不会读得一头雾水。</p>
+
+<p style="margin-top:50px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px;">由 <code>UE基础二-基类与蓝图子类的分工.md</code> 生成 · 离线可用单文件 HTML · 关系图为本页新增</p>
+</main>
+</div>
+</body>
+</html>

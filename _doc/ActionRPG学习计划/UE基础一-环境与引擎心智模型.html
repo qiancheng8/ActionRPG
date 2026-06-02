@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UE 基础一 · 环境与引擎心智模型（知识点关系图解）</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a22; --panel2:#1d222c; --line:#2b313d;
+    --fg:#e6e9ef; --muted:#9aa4b2; --accent:#5aa9ff; --accent2:#7ee787;
+    --warn:#ffcc66; --cpp:#ff9d7a; --bp:#a78bfa; --cfg:#7ee787;
+    --code-bg:#11151c; --code-fg:#d6deeb;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    line-height:1.85; font-size:16px;
+  }
+  .wrap{display:flex; max-width:1280px; margin:0 auto;}
+  /* 侧边导航 */
+  nav{
+    position:sticky; top:0; align-self:flex-start; height:100vh; overflow:auto;
+    width:240px; padding:24px 16px; border-right:1px solid var(--line);
+    background:var(--panel); font-size:14px; flex:0 0 240px;
+  }
+  nav h2{font-size:13px; color:var(--muted); letter-spacing:1px; margin:0 0 12px;}
+  nav a{display:block; color:var(--fg); text-decoration:none; padding:6px 10px; border-radius:8px; margin-bottom:2px;}
+  nav a:hover{background:var(--panel2); color:var(--accent);}
+  nav a.sub{padding-left:22px; color:var(--muted); font-size:13px;}
+  main{flex:1; min-width:0; padding:36px 48px 120px;}
+  h1{font-size:30px; line-height:1.4; margin:0 0 8px;}
+  .lead{color:var(--muted); font-size:15px; margin-bottom:28px;}
+  h2{font-size:23px; margin:46px 0 14px; padding-top:10px; border-top:1px solid var(--line);}
+  h3{font-size:18px; margin:30px 0 10px; color:var(--accent);}
+  p{margin:12px 0;}
+  code{font-family:"JetBrains Mono","Consolas",monospace; background:#222836; color:#ffd9a0; padding:1px 6px; border-radius:5px; font-size:.9em;}
+  pre{background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow:auto; margin:16px 0;}
+  pre code{background:none; color:var(--code-fg); padding:0; font-size:13.5px; line-height:1.7;}
+  .cmt{color:#6b7689;}
+  .kw{color:#c792ea;} .ty{color:#82aaff;} .str{color:#c3e88d;} .fn{color:#82d9ff;}
+  table{border-collapse:collapse; width:100%; margin:18px 0; font-size:14.5px;}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left;}
+  th{background:var(--panel2); color:var(--accent);}
+  tr:nth-child(even) td{background:#13171f;}
+  strong{color:#fff;}
+  .tip{border-left:4px solid var(--warn); background:#211d12; padding:12px 16px; border-radius:0 8px 8px 0; margin:18px 0;}
+  .tip b{color:var(--warn);}
+  /* ===== 关系图通用 ===== */
+  .diagram{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; margin:22px 0;}
+  .diagram .cap{font-size:13px; color:var(--muted); margin-bottom:16px; letter-spacing:.5px;}
+  .box{border:1.5px solid var(--line); border-radius:10px; padding:10px 14px; background:var(--panel2); display:inline-block; text-align:center;}
+  .box .t{font-weight:700; font-family:"JetBrains Mono",monospace;}
+  .box .d{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .box.cpp{border-color:var(--cpp);} .box.cpp .t{color:var(--cpp);}
+  .box.bp{border-color:var(--bp);} .box.bp .t{color:var(--bp);}
+  .box.cfg{border-color:var(--cfg);} .box.cfg .t{color:var(--cfg);}
+  .box.engine{border-color:var(--accent);} .box.engine .t{color:var(--accent);}
+  .flow{display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px;}
+  .arr{color:var(--accent); font-size:22px; padding:0 6px; white-space:nowrap;}
+  .arr small{display:block; font-size:11px; color:var(--muted); text-align:center; line-height:1;}
+  .vstack{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .legend{display:flex; gap:18px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:16px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .anchor{position:relative; top:-10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <h2>目录</h2>
+  <a href="#top">开篇 · 先跑起来再换脑子</a>
+  <a href="#map">★ 知识点关系总图</a>
+  <a href="#look">一、项目长什么样</a>
+  <a href="#toolchain">二、跑通工具链</a>
+  <a href="#step1" class="sub">第一步 生成 VS 工程</a>
+  <a href="#step2" class="sub">第二步 编译编辑器目标</a>
+  <a href="#step3" class="sub">第三步 打开编辑器进游戏</a>
+  <a href="#target">三、两个 Target 的区别</a>
+  <a href="#module">四、两个模块与加载屏</a>
+  <a href="#mind">五、换脑子：UE 的 C++</a>
+  <a href="#uobject" class="sub">UObject / 反射 / GC</a>
+  <a href="#macros" class="sub">那一堆宏</a>
+  <a href="#prefix" class="sub">命名前缀规则</a>
+  <a href="#api" class="sub">ACTIONRPG_API</a>
+  <a href="#buildcs" class="sub">Build.cs 依赖声明</a>
+  <a href="#runtime">六、跑不掉的运行时概念</a>
+  <a href="#check">七、验收清单</a>
+</nav>
+
+<main>
+<span class="anchor" id="top"></span>
+<h1>从 C++ 程序员到 UE 开发者<br>先把 ActionRPG 跑起来，再换脑子</h1>
+<p class="lead">UE 基础 · 第一阶段　|　面向 C++ 写了不少年、但没碰过 UE 正向开发的读者　|　本页在原文基础上加了一组关系图，帮你把工具链、Target、模块、对象系统这些零散概念串成一张网。</p>
+
+<p>我假设你和我一样，C++ 写了不少年，但从没碰过 UE 的正向开发。打开 ActionRPG 这个项目，第一反应大概是「源码在哪、main 函数在哪、怎么编译」。结果翻了一圈，连个 CMakeLists 都没有，<code>.cpp</code> 文件里全是看不懂的宏。别慌，这篇就是带你把这套工具链跑通，顺便把脑子里那套「裸 C++」的世界观换成「UE 的世界观」。</p>
+<p>这是 ActionRPG 学习计划的阶段一。目标只有三件事：能编译、能打开编辑器、能进游戏玩一遍。然后在这个过程里，把几个绕不开的概念啃下来。</p>
+
+<div class="tip"><b>约定　</b>小编的项目目录为 <code>J:\_ALL\CODE\codeup.aliyun.com\_jy\_ue4.27.2\ActionRPG</code>，遇到该路径时替换成你自己的工作目录。</div>
+
+<!-- ===================== 关系总图 ===================== -->
+<span class="anchor" id="map"></span>
+<h2>★ 先看一张图：这一篇的知识点怎么串起来</h2>
+<p>阶段一其实就两条主线：一条是「怎么把项目跑起来」的工具链流程，一条是「UE 的 C++ 到底特殊在哪」的心智模型。下面这张总图先把它俩摆在一起，后面每节再放大看局部。</p>
+
+<div class="diagram">
+  <div class="cap">本篇知识点总图：上半行=操作流程（怎么跑起来）　下半区=心智模型（要换的脑子）</div>
+  <div class="flow">
+    <div class="box cfg"><div class="t">生成 VS 工程</div><div class="d">UBT 读 .uproject/.cs</div></div>
+    <span class="arr">→</span>
+    <div class="box cpp"><div class="t">Build.bat 编译</div><div class="d">ActionRPGEditor 目标</div></div>
+    <span class="arr">→</span>
+    <div class="box engine"><div class="t">打开编辑器</div><div class="d">UE4Editor 加载 DLL</div></div>
+    <span class="arr">→</span>
+    <div class="box bp"><div class="t">Play / PIE</div><div class="d">在编辑器里跑游戏</div></div>
+  </div>
+  <div class="flow" style="margin-top:18px; gap:14px; align-items:stretch;">
+    <div class="box" style="border-color:#3a4150;flex:1"><div class="t" style="color:var(--cpp)">Target 体系</div><div class="d">Editor vs Game<br>靠 TargetType 区分</div></div>
+    <div class="box" style="border-color:#3a4150;flex:1"><div class="t" style="color:var(--accent)">Module 体系</div><div class="d">主模块 + 加载屏模块<br>加载阶段有先后</div></div>
+    <div class="box" style="border-color:#3a4150;flex:1"><div class="t" style="color:var(--bp)">UObject 体系</div><div class="d">反射 / GC / 蓝图暴露<br>全靠那堆宏</div></div>
+    <div class="box" style="border-color:#3a4150;flex:1"><div class="t" style="color:var(--accent2)">游戏框架对象</div><div class="d">GameInstance / GameMode<br>Controller / Actor / Component</div></div>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--cfg)"></i>配置 / 工具（.ini/.cs）</span>
+    <span><i class="dot" style="background:var(--bp)"></i>蓝图 / 编辑期（Content/）</span>
+    <span><i class="dot" style="background:var(--cpp)"></i>C++（Source/）</span>
+    <span><i class="dot" style="background:var(--accent)"></i>引擎运行时</span>
+  </div>
+</div>
+
+<!-- ===================== 一、项目长什么样 ===================== -->
+<span class="anchor" id="look"></span>
+<h2>一、先认清这个项目长什么样</h2>
+<p>ActionRPG 是 Epic 官方的示例项目，对应引擎版本是 4.27（看 <code>ActionRPG.uproject</code> 里的 <code>"EngineAssociation": "4.27"</code>）。它演示的是 GameplayAbilities（简称 GAS）、资产管理器、存档背包这几套系统。</p>
+<p>有件事现在就要记住：这个项目绝大部分游戏逻辑不在 C++ 里，而在 <code>Content/</code> 目录下的蓝图里。<code>Source/</code> 里的 C++ 只提供「可以被蓝图继承的基类」。所以你想靠读 <code>.cpp</code> 把整个游戏看明白，是行不通的。<strong>C++ 在这里负责定义能力，蓝图负责装配数据和接线。</strong>这个分工现在先有个印象，后面阶段会反复遇到。</p>
+
+<!-- ===================== 二、工具链 ===================== -->
+<span class="anchor" id="toolchain"></span>
+<h2>二、跑通工具链：生成工程 → 编译 → 进游戏</h2>
+<p>UE 不像普通 C++ 项目那样「打开 IDE 直接编译运行」，整条链路被拆成几步，每一步都由引擎的 UnrealBuildTool（UBT）在背后做主。下面这张图先把四步连起来，再逐步拆开讲。</p>
+
+<div class="diagram">
+  <div class="cap">关系图 1 · 构建工具链流程（横向 flow，每一步喂给下一步）</div>
+  <div class="flow">
+    <div class="vstack">
+      <div class="box cfg"><div class="t">生成 VS 工程</div><div class="d">GenerateProjectFiles</div></div>
+      <div class="d" style="font-size:11.5px;color:var(--muted)">产出 ActionRPG.sln（壳子）</div>
+    </div>
+    <span class="arr">→<small>有了工程</small></span>
+    <div class="vstack">
+      <div class="box cpp"><div class="t">Build.bat 编译</div><div class="d">ActionRPGEditor Win64 Development</div></div>
+      <div class="d" style="font-size:11.5px;color:var(--muted)">产出模块 DLL</div>
+    </div>
+    <span class="arr">→<small>DLL 就绪</small></span>
+    <div class="vstack">
+      <div class="box engine"><div class="t">UE4Editor.exe</div><div class="d">打开 .uproject</div></div>
+      <div class="d" style="font-size:11.5px;color:var(--muted)">把 DLL 当模块挂载</div>
+    </div>
+    <span class="arr">→<small>编辑器起来</small></span>
+    <div class="vstack">
+      <div class="box bp"><div class="t">Play (Alt+P)</div><div class="d">PIE 模式</div></div>
+      <div class="d" style="font-size:11.5px;color:var(--muted)">在编辑器窗口里玩</div>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;">注意：真正的编译规则在 UBT 手里，<code>.sln</code> 只是给 IDE 看的壳子；按 F5 背后调的还是 UBT。</p>
+</div>
+
+<span class="anchor" id="step1"></span>
+<h3>第一步：生成 VS 工程文件</h3>
+<p>UE 项目的源码不是直接拿 VS 打开的，得先由引擎根据 <code>.uproject</code> 和各种 <code>.cs</code> 配置生成一套 <code>.sln</code> / <code>.vcxproj</code>。这套生成出来的工程文件本质上是给 IDE 看的壳子，真正的编译规则在 UE 自己的 UnrealBuildTool（UBT）手里。</p>
+<p>最省事的办法是在资源管理器里右键 <code>ActionRPG.uproject</code>，选「Generate Visual Studio project files」。</p>
+<p style="color:var(--muted);font-size:13px">（原文此处有截图 <code>image-20260602172018620.png</code>）</p>
+<p>如果右键没这一项（菜单项偶尔会丢，尤其是装了多个引擎版本时），就用命令行，把引擎路径换成你自己的安装位置：</p>
+<pre><code><span class="cmt"># 用引擎自带的批处理生成工程文件</span>
+&amp; <span class="str">"&lt;UE_4.27&gt;\Engine\Build\BatchFiles\GenerateProjectFiles.bat"</span> <span class="str">"J:\_ALL\CODE\codeup.aliyun.com\_jy\_ue4.27.2\ActionRPG\ActionRPG.uproject"</span></code></pre>
+<div class="tip"><b>多版本踩坑　</b>部分电脑安装了多个版本的 UE，会导致右键执行报错（或执行了非指定版本的 sln 文件），这时候可以直接调 UnrealBuildTool：</div>
+<pre><code>$ubt = <span class="str">"J:\Program Files\Epic Games\UE_4.27\Engine\Binaries\DotNET\UnrealBuildTool.exe"</span>;
+$proj = <span class="str">"J:\_ALL\CODE\codeup.aliyun.com\_jy\_ue4.27.2\ActionRPG\ActionRPG.uproject"</span>;
+$ubt -projectfiles -project=<span class="str">"$proj"</span> -game -rocket -progress</code></pre>
+<p>如果你想通过 UE 源码编译项目（能调试引擎代码），修改上述代码中的 <code>UnrealBuildTool.exe</code> 路径即可。</p>
+<p>跑完你会在项目根目录看到 <code>ActionRPG.sln</code>。注意这个 <code>.sln</code> 是生成物，不该进版本库，改了 C++ 文件名或加了新文件，重新生成一次就行。</p>
+
+<span class="anchor" id="step2"></span>
+<h3>第二步：编译编辑器目标</h3>
+<p>这里有个新手最容易懵的点。UE 不是「编译一个程序」，而是「编译某个 Target」。这个项目有两个 Target，待会儿专门讲区别。现在你要编的是编辑器目标 <code>ActionRPGEditor</code>：</p>
+<pre><code><span class="cmt"># 编译编辑器目标，Win64 平台，Development 配置</span>
+&amp; <span class="str">"&lt;UE_4.27&gt;\Engine\Build\BatchFiles\Build.bat"</span> ActionRPGEditor Win64 Development <span class="str">"J:\_ALL\CODE\codeup.aliyun.com\_jy\_ue4.27.2\ActionRPG\ActionRPG.uproject"</span> -waitmutex</code></pre>
+<p>几个参数解释一下：<code>ActionRPGEditor</code> 是 Target 名，<code>Win64</code> 是平台，<code>Development</code> 是编译配置（带调试信息但开了优化，日常开发就用它）。<code>-waitmutex</code> 让它等其他 UBT 进程释放锁，避免你同时开着编辑器时报冲突。</p>
+<p>第一次编译会比较久，因为要编引擎依赖。编出来的产物是一个 DLL，编辑器启动时把它当模块加载进去。这点和你熟悉的「编译出一个 exe 双击运行」不一样，<strong>UE 编辑器本体是引擎提供的 <code>UE4Editor.exe</code>，你的项目代码是挂在它上面的动态模块。</strong></p>
+<p>你当然也可以直接在 VS 里选 <code>ActionRPGEditor</code> 配置按 F5，效果一样，背后调的还是 UBT。</p>
+
+<span class="anchor" id="step3"></span>
+<h3>第三步：打开编辑器，进游戏玩一遍</h3>
+<pre><code><span class="cmt"># 用编辑器打开项目</span>
+&amp; <span class="str">"&lt;UE_4.27&gt;\Engine\Binaries\Win64\UE4Editor.exe"</span> <span class="str">"J:\_ALL\CODE\codeup.aliyun.com\_jy\_ue4.27.2\ActionRPG\ActionRPG.uproject"</span></code></pre>
+<p>编辑器起来后，工具栏上有个 Play 按钮（快捷键 Alt+P）。点下去就在编辑器窗口里跑起游戏了，这个模式叫 PIE（Play In Editor）。先别急着看代码，老老实实当个玩家把游戏玩一遍：走两步、攻击、捡装备、用药水。你对这游戏有了体感，后面读到「伤害管线」「物品槽授予能力」这些抽象描述时，脑子里才有画面对得上。</p>
+<p>阶段一的验收里有一条是「改一行 C++ → 编译 → 运行看到效果」，文末会给一个具体例子，但得等你把概念铺垫读完才好动手。</p>
+
+<!-- ===================== 三、两个 Target ===================== -->
+<span class="anchor" id="target"></span>
+<h2>三、两个 Target 的区别</h2>
+<p>打开 <code>Source/</code> 目录，你会看到两个 <code>.Target.cs</code> 文件。它们是 UBT 的配置，用 C# 写的（对，UE 的构建脚本是 C#，不是 C++）。</p>
+<p><code>ActionRPGEditor.Target.cs</code> 内容很短，核心就一行：</p>
+<pre><code><span class="ty">Type</span> = TargetType.Editor;   <span class="cmt">// 这是编辑器目标</span>
+ExtraModuleNames.AddRange(<span class="kw">new</span> <span class="ty">string</span>[] { <span class="str">"ActionRPG"</span> });</code></pre>
+<p><code>ActionRPG.Target.cs</code> 几乎一样，只差类型：</p>
+<pre><code><span class="ty">Type</span> = TargetType.Game;     <span class="cmt">// 这是打包游戏目标</span></code></pre>
+
+<div class="diagram">
+  <div class="cap">关系图 2 · 两个 Target 同源不同 TargetType，产物和用途分叉</div>
+  <div class="flow" style="margin-bottom:14px;">
+    <div class="box" style="border-color:#3a4150"><div class="t">同一份 C++ 源码</div><div class="d">Source/ActionRPG</div></div>
+    <span class="arr">↗ ↘<small>按 TargetType 分编</small></span>
+  </div>
+  <div class="flow" style="gap:30px; align-items:flex-start;">
+    <div class="vstack">
+      <div class="box cpp" style="min-width:230px"><div class="t">ActionRPGEditor</div><div class="d">TargetType.Editor</div></div>
+      <div class="box" style="border-color:#3a4150;min-width:230px"><div class="d" style="text-align:left">✅ 带编辑器功能的模块<br>✅ 能在 UE4Editor 里跑、用 PIE<br>✅ 能改资产<br>👉 阶段一只需要它</div></div>
+    </div>
+    <div class="vstack">
+      <div class="box engine" style="min-width:230px"><div class="t">ActionRPGTarget</div><div class="d">TargetType.Game</div></div>
+      <div class="box" style="border-color:#3a4150;min-width:230px"><div class="d" style="text-align:left">📦 脱离编辑器的独立游戏<br>📦 打包发给玩家的那份<br>📦 不含编辑器工具代码，体积小跑得快<br>👉 是阶段八的事</div></div>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;">两个 Target 都设了 <code>DefaultBuildSettings = BuildSettingsVersion.V2</code>，一组默认编译选项的版本号，暂时不用管。</p>
+</div>
+
+<p>区别就在这个 <code>Type</code>。<code>Editor</code> 目标编出来的是带编辑器功能的模块，能在 UE4Editor 里跑、能用 PIE、能改资产。<code>Game</code> 目标编出来的是脱离编辑器的独立游戏，也就是你打包发给玩家的那份。打包游戏里不会带编辑器那一大坨工具代码，体积小、跑得快。</p>
+<p>阶段一你只需要 <code>Editor</code> 目标。<code>Game</code> 目标和打包是阶段八的事，现在知道有这么个东西、知道它俩靠 <code>TargetType</code> 区分就够了。</p>
+
+<!-- ===================== 四、两个模块 ===================== -->
+<span class="anchor" id="module"></span>
+<h2>四、两个模块，以及为什么加载屏要单独拎出来</h2>
+<p>Target 是「编译目标」，模块（Module）是「代码的组织单元」。一个 Target 可以包含多个模块。看 <code>ActionRPG.uproject</code> 的 <code>Modules</code> 段：</p>
+<pre><code><span class="str">"Modules"</span>: [
+    {
+        <span class="str">"Name"</span>: <span class="str">"ActionRPG"</span>,
+        <span class="str">"Type"</span>: <span class="str">"Runtime"</span>,
+        <span class="str">"LoadingPhase"</span>: <span class="str">"Default"</span>
+    },
+    {
+        <span class="str">"Name"</span>: <span class="str">"ActionRPGLoadingScreen"</span>,
+        <span class="str">"Type"</span>: <span class="str">"ClientOnly"</span>,
+        <span class="str">"LoadingPhase"</span>: <span class="str">"PreLoadingScreen"</span>
+    }
+]</code></pre>
+<p><code>ActionRPG</code> 是主模块，所有 gameplay 代码都在这。它的类型是 <code>Runtime</code>、加载阶段是 <code>Default</code>，没什么特别。</p>
+<p>有意思的是第二个模块 <code>ActionRPGLoadingScreen</code>。它干的事很单一，就是显示加载屏（启动时那段影片或者 loading 画面）。为什么不把这点代码塞进主模块、非要单开一个？答案藏在 <code>LoadingPhase</code> 上。它是 <code>PreLoadingScreen</code>，意思是「在主模块加载之前就先把我加载起来」。</p>
+
+<div class="diagram">
+  <div class="cap">关系图 3 · 两个模块的加载先后与依赖方向（时间轴从左到右）</div>
+  <div class="flow" style="gap:6px;">
+    <div class="vstack">
+      <div class="box bp" style="min-width:240px"><div class="t">ActionRPGLoadingScreen</div><div class="d">ClientOnly · PreLoadingScreen<br>只依赖 Core/Engine/MoviePlayer/Slate…<br>不依赖 ActionRPG</div></div>
+      <div class="d" style="font-size:11.5px;color:var(--bp)">① 先加载：负责放加载屏，不黑屏</div>
+    </div>
+    <span class="arr">⏱ 时间轴 →<small>之后</small></span>
+    <div class="vstack">
+      <div class="box engine" style="min-width:240px"><div class="t">ActionRPG</div><div class="d">Runtime · Default<br>所有 gameplay 代码<br>通过 IActionRPGLoadingScreenModule 接口用前者</div></div>
+      <div class="d" style="font-size:11.5px;color:var(--accent)">② 后加载：主模块和大堆资产就绪</div>
+    </div>
+  </div>
+  <div class="flow" style="margin-top:16px;">
+    <div class="box bp"><div class="t">加载屏模块</div></div>
+    <span class="arr" style="color:#ff6b6b">⛔ 不能依赖 ──▶</span>
+    <div class="box engine"><div class="t">主模块</div></div>
+    <span class="arr" style="color:var(--accent2)">　主模块 ──▶ 反向用接口 ──▶</span>
+    <div class="box bp"><div class="t">加载屏模块</div></div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;">规律：<strong>早加载的模块不能依赖晚加载的模块</strong>，否则它加载时被依赖方的类还不存在。</p>
+</div>
+
+<p>道理也好理解：加载屏的使命是在主模块和大堆资产还没就绪的时候，先给玩家一个不黑屏的画面。如果加载屏代码跟主模块绑在一起，那就得等主模块加载完才能显示加载屏，逻辑上自相矛盾。所以它必须是个独立模块，且加载时机要排在主模块前面。这个模块的 <code>.Build.cs</code> 里有句注释把话挑明了：</p>
+<div class="tip"><b>源码注释　</b>This module must be loaded "PreLoadingScreen" in the .uproject file, otherwise it will not hook in time!<br>此模块必须在 .uproject 文件中以"PreLoadingScreen"的名称进行加载，否则将无法及时加载！</div>
+<p>还有个约束你后面会用到：这个加载屏模块不能反向依赖主模块的类型。看它的 <code>ActionRPGLoadingScreen.Build.cs</code>，依赖里只有 <code>Core / CoreUObject / Engine / MoviePlayer / Slate / SlateCore / InputCore</code>，没有 <code>ActionRPG</code>。因为它加载得更早，那时主模块的类还不存在，依赖了就会出问题。主模块反过来通过 <code>IActionRPGLoadingScreenModule</code> 接口去用它。这种「早加载的模块不能依赖晚加载的模块」的约束，是 UE 模块体系里很典型的一类坑。</p>
+
+<!-- ===================== 五、换脑子 ===================== -->
+<span class="anchor" id="mind"></span>
+<h2>五、换脑子：UE 的 C++ 和你熟的 C++ 不是一回事</h2>
+<p>工具链跑通了，接下来这部分才是阶段一真正的硬骨头。你打开任何一个 <code>.h</code> 文件，都会被一堆宏糊一脸。这些不是花架子，是 UE 整套对象系统的入口。</p>
+
+<span class="anchor" id="uobject"></span>
+<h3>UObject、反射、垃圾回收</h3>
+<p>UE 有自己的一套对象系统，核心基类叫 <code>UObject</code>。凡是继承自它的类，引擎都能在运行时知道这个类有哪些属性、哪些函数、叫什么名字。这种「程序运行时还能反过来查自己结构」的能力叫<strong>反射</strong>，C++ 标准里没有，UE 靠代码生成硬造了一套。</p>
+<p>反射带来的最直接好处是垃圾回收（GC）。<code>UObject</code> 是被 GC 管理的，你不用手动 delete。但这里有个新手必踩的坑：GC 怎么知道某个对象还在被用、不能回收？靠的就是 <code>UPROPERTY</code> 标记的指针。</p>
+<p>举个例子，<code>RPGCharacterBase.h</code> 里有这么一句：</p>
+<pre><code><span class="kw">UPROPERTY</span>(EditAnywhere, BlueprintReadOnly, Category = Abilities)
+<span class="ty">TArray</span>&lt;<span class="ty">TSubclassOf</span>&lt;<span class="ty">URPGGameplayAbility</span>&gt;&gt; GameplayAbilities;</code></pre>
+<p>这个成员被 <code>UPROPERTY</code> 标记了，GC 就把它当成一条「引用」记账。只要这个角色还活着，它引用的能力类就不会被回收。反过来，如果你写一个<strong>裸指针</strong>指向 UObject，又<strong>没</strong>加 <code>UPROPERTY</code>，GC 完全看不见这条引用，可能在某次回收里把对象干掉，留你一个野指针。</p>
+<div class="tip"><b>最容易栽的地方　</b>指向 UObject 的成员指针，要么加 <code>UPROPERTY</code>，要么你非常清楚自己在干什么。</div>
+
+<span class="anchor" id="macros"></span>
+<h3>那一堆宏分别是干嘛的</h3>
+<ul>
+  <li><code>UCLASS()</code>：声明这是个反射类（必须继承 <code>UObject</code> 或其子类）。配套要在类体里写 <code>GENERATED_BODY()</code>，这是代码生成器塞东西的占位。</li>
+  <li><code>USTRUCT()</code>：声明一个反射结构体，比如 <code>RPGTypes.h</code> 里那些 <code>FRPGItemSlot</code>。</li>
+  <li><code>UENUM()</code>：声明一个能被编辑器和蓝图识别的枚举。</li>
+  <li><code>UPROPERTY()</code>：标记一个成员变量，让它进反射系统、被 GC 追踪、能在编辑器面板里显示。</li>
+  <li><code>UFUNCTION()</code>：标记一个成员函数，让它能被蓝图调用、被反射、或者作为网络 RPC。</li>
+</ul>
+
+<div class="diagram">
+  <div class="cap">关系图 4 · 核心宏 → 反射系统 → 三大能力（GC 追踪 / 蓝图暴露 / 编辑器面板）</div>
+  <div class="flow" style="gap:10px;">
+    <div class="vstack">
+      <div class="box cpp"><div class="t">UCLASS</div><div class="d">类入反射</div></div>
+      <div class="box cpp"><div class="t">USTRUCT</div></div>
+      <div class="box cpp"><div class="t">UENUM</div></div>
+      <div class="box cpp"><div class="t">UPROPERTY</div><div class="d">成员入反射</div></div>
+      <div class="box cpp"><div class="t">UFUNCTION</div><div class="d">函数入反射</div></div>
+    </div>
+    <span class="arr">──▶<small>UHT 代码生成<br>.generated.h</small></span>
+    <div class="box engine" style="border-style:dashed"><div class="t">反射系统</div><div class="d">运行时知道<br>类有啥属性/函数/名字</div></div>
+    <span class="arr">──▶</span>
+    <div class="vstack">
+      <div class="box engine"><div class="t">GC 追踪</div><div class="d">UPROPERTY 指针 = 一条引用<br>不用手动 delete</div></div>
+      <div class="box bp"><div class="t">蓝图暴露</div><div class="d">Blueprint* 修饰符<br>读写 / 调用 / 实现</div></div>
+      <div class="box cfg"><div class="t">编辑器面板</div><div class="d">EditAnywhere / Category<br>细节面板里可调</div></div>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--cpp)"></i>C++ 宏</span>
+    <span><i class="dot" style="background:var(--accent)"></i>引擎运行时（反射/GC）</span>
+    <span><i class="dot" style="background:var(--bp)"></i>蓝图暴露</span>
+    <span><i class="dot" style="background:var(--cfg)"></i>编辑器面板</span>
+  </div>
+</div>
+
+<p><code>UPROPERTY</code> 和 <code>UFUNCTION</code> 括号里的修饰符是你天天要打交道的，常见这几个：</p>
+<ul>
+  <li><code>EditAnywhere</code>：这个属性能在编辑器的细节面板里改。</li>
+  <li><code>BlueprintReadWrite</code> / <code>BlueprintReadOnly</code>：蓝图能不能读写这个属性。</li>
+  <li><code>BlueprintCallable</code>：蓝图能调这个函数（C++ 实现，蓝图调用）。</li>
+  <li><code>Category="Abilities"</code>：在编辑器面板里把它归到哪个分组，纯粹是为了界面整洁。</li>
+</ul>
+<p>看 <code>RPGCharacterBase.h</code> 里这个真实例子就懂了：</p>
+<pre><code><span class="kw">UFUNCTION</span>(<span class="ty">BlueprintCallable</span>)
+<span class="kw">virtual float</span> <span class="fn">GetHealth</span>() <span class="kw">const</span>;   <span class="cmt">// C++ 实现，蓝图里能直接拖出这个节点调用</span></code></pre>
+<p>还有一个方向相反的修饰符叫 <code>BlueprintImplementableEvent</code>，意思是 C++ 只声明、由蓝图去实现。这俩方向的桥接是阶段二的重点，这里先混个眼熟。</p>
+
+<span class="anchor" id="prefix"></span>
+<h3>命名前缀不是装饰，是规则</h3>
+<p>UE 的类名首字母是有强制含义的，编译器和代码生成器会校验：</p>
+<table>
+  <tr><th>前缀</th><th>含义</th><th>例子</th></tr>
+  <tr><td><code>U</code></td><td>继承自 <code>UObject</code> 的类</td><td><code>URPGItem</code>、<code>URPGGameplayAbility</code></td></tr>
+  <tr><td><code>A</code></td><td>继承自 <code>AActor</code> 的类（能放进关卡的对象）</td><td><code>ARPGCharacterBase</code></td></tr>
+  <tr><td><code>F</code></td><td>普通结构体</td><td><code>FRPGItemSlot</code></td></tr>
+  <tr><td><code>I</code></td><td>接口</td><td><code>IRPGInventoryInterface</code></td></tr>
+  <tr><td><code>E</code></td><td>枚举</td><td>—</td></tr>
+</table>
+<p>这套前缀不是建议，是硬规定。你把一个 <code>UObject</code> 子类命名成 <code>A</code> 开头，UHT（代码生成器）会直接报错。本项目在这套规则之上，又统一加了 <code>RPG</code> 业务前缀，所以你看到的是 <code>ARPGCharacterBase</code> 这种 <code>A</code> + <code>RPG</code> + 业务名的组合。</p>
+
+<span class="anchor" id="api"></span>
+<h3>ACTIONRPG_API 是什么</h3>
+<p>你会发现几乎每个 public 类前面都挂着 <code>ACTIONRPG_API</code>：</p>
+<pre><code><span class="kw">UCLASS</span>()
+<span class="kw">class</span> ACTIONRPG_API <span class="ty">ARPGCharacterBase</span> : <span class="kw">public</span> <span class="ty">ACharacter</span>, ...</code></pre>
+<p>前面说过，模块编出来是 DLL。这个宏就是控制符号导出/导入的，让别的模块能链接到这个类。它是个根据模块名自动生成的宏，规则是 <code>模块名大写_API</code>。你自己加新类的时候，如果想让别的模块用，就照着挂上；纯内部用的可以不挂。机制上等价于 Windows 那套 <code>__declspec(dllexport/dllimport)</code>，UE 帮你包好了。</p>
+
+<span class="anchor" id="buildcs"></span>
+<h3>Build.cs 是 UE 版的依赖声明</h3>
+<p>回到 <code>ActionRPG.Build.cs</code>。这个文件相当于在告诉 UBT「我这个模块依赖哪些别的模块」。它分两类依赖：</p>
+<pre><code>PublicDependencyModuleNames.AddRange(<span class="kw">new</span> <span class="ty">string</span>[] {
+    <span class="str">"Core"</span>, <span class="str">"CoreUObject"</span>, <span class="str">"Engine"</span>
+});
+
+PrivateDependencyModuleNames.AddRange(<span class="kw">new</span> <span class="ty">string</span>[] {
+    <span class="str">"ActionRPGLoadingScreen"</span>, <span class="str">"Slate"</span>, <span class="str">"SlateCore"</span>, <span class="str">"InputCore"</span>,
+    <span class="str">"MoviePlayer"</span>, <span class="str">"GameplayAbilities"</span>, <span class="str">"GameplayTags"</span>, <span class="str">"GameplayTasks"</span>, <span class="str">"AIModule"</span>
+});</code></pre>
+<p><code>Public</code> 依赖会传递给依赖本模块的人，<code>Private</code> 不会，差不多就是 CMake 里 <code>PUBLIC</code> 和 <code>PRIVATE</code> 链接的味道。从这份清单能直接读出这个项目用了什么：<code>GameplayAbilities / GameplayTags / GameplayTasks</code> 是 GAS 那一套（阶段六的主菜），<code>AIModule</code> 是敌人 AI，<code>MoviePlayer</code> 给加载屏放影片用。</p>
+<p>文件后半段还有个值得一看的写法：</p>
+<pre><code><span class="kw">if</span> (Target.Platform == UnrealTargetPlatform.IOS)
+{
+    PrivateDependencyModuleNames.AddRange(<span class="kw">new</span> <span class="ty">string</span>[] { <span class="str">"OnlineSubsystem"</span>, <span class="str">"OnlineSubsystemUtils"</span> });
+    <span class="cmt">// ...</span>
+}
+<span class="kw">else if</span> (Target.Platform == UnrealTargetPlatform.Android)
+{
+    <span class="cmt">// ...</span>
+}</code></pre>
+<p>因为 Build.cs 是 C# 脚本而不是死的配置，它能根据目标平台动态加依赖。这里只在 iOS / Android 上才拉进 OnlineSubsystem。这也提醒你，ActionRPG 是个跨移动端的项目（<code>.uproject</code> 里 <code>TargetPlatforms</code> 列了 Android、iOS、WindowsNoEditor、MacNoEditor），后面很多架构选择都是被移动端约束逼出来的。</p>
+
+<!-- ===================== 六、运行时概念 ===================== -->
+<span class="anchor" id="runtime"></span>
+<h2>六、几个跑不掉的运行时概念</h2>
+<p>阶段一验收要求你能说清 Actor、Component、GameMode、GameInstance、PlayerController 各是什么。这里给个能对上号的最小版本，细节后面阶段会展开。</p>
+
+<div class="diagram">
+  <div class="cap">关系图 5 · 游戏框架对象的从属与生命周期（越靠左活得越久）</div>
+  <div class="flow" style="align-items:stretch;">
+    <div class="vstack">
+      <div class="box engine" style="min-width:170px"><div class="t">GameInstance</div><div class="d">URPGGameInstanceBase<br>整个进程都在<br>切关卡不销毁</div></div>
+      <div class="d" style="font-size:11.5px;color:var(--accent)">存档 / 背包数据挂这</div>
+    </div>
+    <span class="arr">⊃<small>一进程<br>含多关卡</small></span>
+    <div class="vstack">
+      <div class="box engine" style="min-width:170px"><div class="t">GameMode</div><div class="d">ARPGGameModeBase<br>定义本局规则<br>只服务器/单机端有</div></div>
+      <div class="d" style="font-size:11.5px;color:var(--accent)">一局 / 一关卡</div>
+    </div>
+    <span class="arr">⊃<small>决定用<br>哪些 Actor</small></span>
+    <div class="vstack">
+      <div class="box cpp" style="min-width:170px"><div class="t">PlayerController</div><div class="d">ARPGPlayerControllerBase<br>玩家这个操控者<br>把输入翻译成动作</div></div>
+      <div class="d" style="font-size:11.5px;color:var(--cpp)">本项目背包挂这（设计选择）</div>
+    </div>
+    <span class="arr">操控▶</span>
+    <div class="vstack">
+      <div class="box bp" style="min-width:170px"><div class="t">Actor (Character)</div><div class="d">ARPGCharacterBase<br>能放进关卡 · 有位置<br>BeginPlay→Tick→EndPlay</div></div>
+      <div class="d" style="font-size:11.5px;color:var(--bp)">角色/敌人/宝箱/触发器</div>
+    </div>
+    <span class="arr">挂载▶</span>
+    <div class="vstack">
+      <div class="box cfg" style="min-width:170px"><div class="t">Component</div><div class="d">URPGAbilitySystemComponent<br>挂在 Actor 上的零件<br>不能单独存在于世界</div></div>
+      <div class="d" style="font-size:11.5px;color:var(--cfg)">组合优于继承</div>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;">生命周期排序：<strong>GameInstance（整个进程） &gt; GameMode / 关卡里的 Actor（一局/一关卡） &gt; 每帧 Tick</strong>。「数据该挂在哪个对象上」往往取决于它需要活多久。</p>
+</div>
+
+<ul>
+  <li><strong>Actor</strong>：能被放进关卡的东西，有位置、能在世界里存在。角色、敌人、宝箱、触发器都是 Actor。它有完整的生命周期：<code>BeginPlay</code>（进游戏时）到 <code>EndPlay</code>（销毁时），中间每帧可能跑 <code>Tick</code>。本项目的 <code>ARPGCharacterBase</code> 就是 Actor（准确说是 Actor 的子类 Character）。</li>
+  <li><strong>Component</strong>：挂在 Actor 身上的功能零件，自己<strong>不能单独存在于世界里</strong>。比如能力系统组件 <code>URPGAbilitySystemComponent</code> 就是挂在角色上的。一个 Actor 由若干 Component 拼出能力，这是 UE 推崇的组合优于继承。</li>
+  <li><strong>GameMode</strong>：定义这一局游戏的规则，比如用哪个角色类、谁是默认控制器、胜负怎么判。它只在服务器/单机端存在，客户端没有。本项目是 <code>ARPGGameModeBase</code>。</li>
+  <li><strong>GameInstance</strong>：比一局游戏活得更久的全局对象。从游戏启动到退出，它一直在，切关卡也不销毁。所以存档、背包这种「跨关卡要保留」的数据挂在它身上，本项目是 <code>URPGGameInstanceBase</code>。</li>
+  <li><strong>PlayerController</strong>：代表「玩家这个操控者」，负责把输入翻译成游戏里的动作。本项目把背包数据放在 <code>ARPGPlayerControllerBase</code> 上，这是 ActionRPG 的一个设计选择，阶段五会细说。</li>
+</ul>
+<p>生命周期长短排个序大致是：GameInstance（整个进程）&gt; GameMode/关卡里的 Actor（一局/一个关卡）&gt; 每帧的 Tick。记住「数据该挂在哪个对象上」往往取决于它需要活多久，这个判断后面会反复用到。</p>
+
+<!-- ===================== 七、验收 ===================== -->
+<span class="anchor" id="check"></span>
+<h2>七、验收清单：改一行 C++ 看到效果</h2>
+<p>概念铺完了，来闭环。下面这个改动能让你确认整条工具链是通的。</p>
+<p>打开 <code>Source/ActionRPG/Public/RPGCharacterBase.h</code>，找到 <code>GetHealth</code> 那个声明，照葫芦画瓢加一个返回固定值的新函数声明：</p>
+<pre><code><span class="cmt">// 在 RPGCharacterBase.h 里，public 区域</span>
+<span class="kw">UFUNCTION</span>(<span class="ty">BlueprintCallable</span>, Category = <span class="str">"Debug"</span>)
+<span class="kw">float</span> <span class="fn">GetMagicNumber</span>() <span class="kw">const</span>;</code></pre>
+<p>再到对应的 <code>.cpp</code>（<code>Source/ActionRPG/Private/RPGCharacterBase.cpp</code>）里给个实现：</p>
+<pre><code><span class="kw">float</span> <span class="ty">ARPGCharacterBase</span>::<span class="fn">GetMagicNumber</span>() <span class="kw">const</span>
+{
+    <span class="kw">return</span> <span class="ty">42.0f</span>;
+}</code></pre>
+<p>然后重新编译编辑器目标（前面那条 <code>Build.bat ActionRPGEditor ...</code>，或者 VS 里 F5）。编译过了，说明你的反射宏写对了、模块依赖没破、导出符号正常。这就完成了「改一行 C++ → 编译」这半程。</p>
+<p>剩下「运行看到效果」那半程，得等到阶段二三学会怎么在蓝图里把这个 <code>BlueprintCallable</code> 函数连进 Event Graph、或者直接在角色蓝图里打印它的返回值。所以阶段一的验收，能编译过、能进 PIE 玩一遍，就算达标了。</p>
+<div class="tip"><b>自测对照　</b>对照一下你现在应该能答上来的几个问题：两个 Target 差在哪、加载屏为什么单独成模块、<code>UPROPERTY</code> 和 GC 什么关系、<code>U</code>/<code>A</code>/<code>F</code>/<code>I</code>/<code>E</code> 各代表什么、GameInstance 和 PlayerController 谁活得久。这几个都顺了，阶段一的脑子就换过来了，可以进阶段二去追那条「C++ 基类到蓝图子类」的配置链了。</div>
+
+<p style="margin-top:50px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px;">由 <code>UE基础一-环境与引擎心智模型.md</code> 生成 · 离线可用单文件 HTML · 关系图为本页新增</p>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UE 基础七 · UMG、加载屏与异步（知识点关系图解）</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a22; --panel2:#1d222c; --line:#2b313d;
+    --fg:#e6e9ef; --muted:#9aa4b2; --accent:#5aa9ff; --accent2:#7ee787;
+    --warn:#ffcc66; --cpp:#ff9d7a; --bp:#a78bfa; --cfg:#7ee787;
+    --code-bg:#11151c; --code-fg:#d6deeb;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    line-height:1.85; font-size:16px;
+  }
+  .wrap{display:flex; max-width:1280px; margin:0 auto;}
+  /* 侧边导航 */
+  nav{
+    position:sticky; top:0; align-self:flex-start; height:100vh; overflow:auto;
+    width:240px; padding:24px 16px; border-right:1px solid var(--line);
+    background:var(--panel); font-size:14px; flex:0 0 240px;
+  }
+  nav h2{font-size:13px; color:var(--muted); letter-spacing:1px; margin:0 0 12px;}
+  nav a{display:block; color:var(--fg); text-decoration:none; padding:6px 10px; border-radius:8px; margin-bottom:2px;}
+  nav a:hover{background:var(--panel2); color:var(--accent);}
+  nav a.sub{padding-left:22px; color:var(--muted); font-size:13px;}
+  main{flex:1; min-width:0; padding:36px 48px 120px;}
+  h1{font-size:30px; line-height:1.4; margin:0 0 8px;}
+  .lead{color:var(--muted); font-size:15px; margin-bottom:28px;}
+  h2{font-size:23px; margin:46px 0 14px; padding-top:10px; border-top:1px solid var(--line);}
+  h3{font-size:18px; margin:30px 0 10px; color:var(--accent);}
+  p{margin:12px 0;}
+  code{font-family:"JetBrains Mono","Consolas",monospace; background:#222836; color:#ffd9a0; padding:1px 6px; border-radius:5px; font-size:.9em;}
+  pre{background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow:auto; margin:16px 0;}
+  pre code{background:none; color:var(--code-fg); padding:0; font-size:13.5px; line-height:1.7;}
+  .cmt{color:#6b7689;}
+  .kw{color:#c792ea;} .ty{color:#82aaff;} .str{color:#c3e88d;} .fn{color:#82d9ff;}
+  table{border-collapse:collapse; width:100%; margin:18px 0; font-size:14.5px;}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left;}
+  th{background:var(--panel2); color:var(--accent);}
+  tr:nth-child(even) td{background:#13171f;}
+  strong{color:#fff;}
+  .tip{border-left:4px solid var(--warn); background:#211d12; padding:12px 16px; border-radius:0 8px 8px 0; margin:18px 0;}
+  .tip b{color:var(--warn);}
+  /* ===== 关系图通用 ===== */
+  .diagram{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; margin:22px 0;}
+  .diagram .cap{font-size:13px; color:var(--muted); margin-bottom:16px; letter-spacing:.5px;}
+  .box{border:1.5px solid var(--line); border-radius:10px; padding:10px 14px; background:var(--panel2); display:inline-block; text-align:center;}
+  .box .t{font-weight:700; font-family:"JetBrains Mono",monospace;}
+  .box .d{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .box.cpp{border-color:var(--cpp);} .box.cpp .t{color:var(--cpp);}
+  .box.bp{border-color:var(--bp);} .box.bp .t{color:var(--bp);}
+  .box.cfg{border-color:var(--cfg);} .box.cfg .t{color:var(--cfg);}
+  .box.engine{border-color:var(--accent);} .box.engine .t{color:var(--accent);}
+  .flow{display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px;}
+  .arr{color:var(--accent); font-size:22px; padding:0 6px; white-space:nowrap;}
+  .arr small{display:block; font-size:11px; color:var(--muted); text-align:center; line-height:1;}
+  .vstack{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .legend{display:flex; gap:18px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:16px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .anchor{position:relative; top:-10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <h2>目录</h2>
+  <a href="#top">开篇 · UI 怎么跟数据对上</a>
+  <a href="#map">★ 知识点关系总图</a>
+  <a href="#umg">一、UMG 是什么</a>
+  <a href="#question">二、UI 怎么知道背包变了</a>
+  <a href="#chain">三、刷新链：delegate→事件→重画</a>
+  <a href="#refresh" class="sub">★ UI 自动刷新链路图</a>
+  <a href="#module">四、加载屏为何独立成模块</a>
+  <a href="#phase" class="sub">★ 模块加载阶段顺序图</a>
+  <a href="#nodep">五、不能反向依赖主模块</a>
+  <a href="#interface" class="sub">★ 加载屏模块关系图</a>
+  <a href="#async">六、同步 vs 异步加载</a>
+  <a href="#syncasync" class="sub">★ 同步异步对比图</a>
+  <a href="#check">七、验收清单</a>
+</nav>
+
+<main>
+<span class="anchor" id="top"></span>
+<h1>UMG、加载屏与异步<br>看懂 UE 里 UI 怎么跟数据「自己对上」</h1>
+<p class="lead">UE 基础 · 第七阶段　|　面向有 C++ 底子、刚啃完 GAS 的读者　|　本页在原文基础上加了一组关系图，把「数据驱动 UI」「模块分阶段加载」「同步 vs 异步」这三条主线串成网。</p>
+
+<p>到了这一阶段，你已经啃完了 GAS 那座大山。这篇相对轻松，但有两个点特别能体现「UE 工程化思路」和「普通 C++ demo」的区别：一个是 UI 怎么不靠轮询就跟着背包数据自动刷新，一个是加载屏为什么要单独抽成一个模块。我们一个个来。</p>
+<p>先说清楚一件事，作为 C++ 程序员你最容易踩的坑是：以为 UI 也能在源码里写完。ActionRPG 的 UI 一行 C++ 都没有，全在 UMG 的 Widget 蓝图里。所以这一阶段你得多开编辑器，少看 <code>Source/</code>。</p>
+
+<!-- ===================== 关系总图 ===================== -->
+<span class="anchor" id="map"></span>
+<h2>★ 先看一张图：这一篇的三条主线</h2>
+<p>本篇看似零散，其实是三条互相独立又呼应前面阶段的主线。先扫一眼整体，后面每节再放大看局部。</p>
+
+<div class="diagram">
+  <div class="cap">三条主线，对应本页三组重点关系图</div>
+  <div class="flow" style="gap:14px;">
+    <div class="vstack">
+      <div class="box bp"><div class="t">① 数据驱动 UI</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">背包变 → delegate 广播<br>→ Widget 收事件 → 重画<br><small>呼应第五阶段 delegate</small></div></div>
+    </div>
+    <div class="vstack">
+      <div class="box cpp"><div class="t">② 加载屏独立模块</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">PreLoadingScreen 抢先加载<br>接口单向调用、不依赖主模块<br><small>UE 模块系统</small></div></div>
+    </div>
+    <div class="vstack">
+      <div class="box engine"><div class="t">③ 同步 vs 异步</div></div>
+      <span class="arr" style="font-size:16px">↓</span>
+      <div class="box" style="border-color:#3a4150"><div class="d">ForceLoadItem 卡 vs<br>Asset Manager 异步不卡<br><small>呼应第四阶段</small></div></div>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--cfg)"></i>配置（.ini / .uproject）</span>
+    <span><i class="dot" style="background:var(--bp)"></i>蓝图 / UMG（Content/）</span>
+    <span><i class="dot" style="background:var(--cpp)"></i>C++（Source/）</span>
+    <span><i class="dot" style="background:var(--accent)"></i>引擎运行时</span>
+  </div>
+</div>
+
+<!-- ===================== 一、UMG ===================== -->
+<span class="anchor" id="umg"></span>
+<h2>一、UMG 是什么，先建立印象</h2>
+<p>UMG（Unreal Motion Graphics）就是 UE 的 UI 框架。你做的每一个界面，背包、暂停菜单、血条、伤害飘字，都是一个 Widget 蓝图（资产前缀 <code>WB_</code>）。它底层是 Slate（纯 C++ 的那套，加载屏就是直接用 Slate 写的，后面会看到），但日常开发你基本只跟 UMG 打交道。</p>
+
+<p>一个 Widget 蓝图有两个面板：</p>
+<table>
+  <tr><th>面板</th><th>干什么</th><th>类比</th></tr>
+  <tr><td><strong>Designer</strong></td><td>拖控件、摆布局。Button、Text、Image、各种 Box 容器</td><td>跟做网页排版差不多</td></tr>
+  <tr><td><strong>Graph</strong></td><td>写逻辑的地方，有 Event Graph</td><td>跟普通蓝图一样</td></tr>
+</table>
+
+<p>打开内容浏览器，定位到 <code>Content/Blueprints/WidgetBP/</code>，你会看到这个项目所有的界面控件。背包相关的都在 <code>Inventory/</code> 子目录下：</p>
+<pre><code>Content/Blueprints/WidgetBP/Inventory/WB_Equipment.uasset      <span class="cmt">装备面板</span>
+Content/Blueprints/WidgetBP/Inventory/WB_EquipmentSlot.uasset  <span class="cmt">单个装备槽</span>
+Content/Blueprints/WidgetBP/Inventory/WB_InventoryItem.uasset  <span class="cmt">背包里的单个物品格</span>
+Content/Blueprints/WidgetBP/Inventory/WB_InventoryList.uasset  <span class="cmt">背包列表</span></code></pre>
+<p>我们重点看 <code>WB_InventoryList</code> 和 <code>WB_EquipmentSlot</code> 这两个，它们能把「数据变了，UI 自己刷新」这条链讲透。</p>
+
+<!-- ===================== 二、核心问题 ===================== -->
+<span class="anchor" id="question"></span>
+<h2>二、核心问题：UI 怎么知道背包变了</h2>
+<p>回想阶段五，背包的权威数据在 <code>ARPGPlayerControllerBase</code> 上，就是那两张 map：<code>InventoryData</code> 和 <code>SlottedItems</code>。现在 UI 要把这些画出来。问题是，玩家捡了个药水、换了把武器，UI 怎么知道该重画？</p>
+<p>最蠢的做法是每帧去读一遍 map，对比有没有变化。UE 不这么干，它用的是 delegate 广播。这就是阶段五埋下的那套东西，现在终于用上了。</p>
+
+<p>打开 <code>RPGTypes.h</code>，你能看到背包相关的 delegate 是成对声明的：</p>
+<pre><code><span class="cmt">/** Delegate called when the contents of an inventory slot change */</span>
+<span class="kw">DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams</span>(<span class="ty">FOnSlottedItemChanged</span>, FRPGItemSlot, ItemSlot, URPGItem*, Item);
+<span class="kw">DECLARE_MULTICAST_DELEGATE_TwoParams</span>(<span class="ty">FOnSlottedItemChangedNative</span>, FRPGItemSlot, URPGItem*);</code></pre>
+<p>上面那个 <code>Dynamic</code> 版本是给蓝图用的，下面带 <code>Native</code> 后缀的是纯 C++ 版本。为什么要两套，阶段五讲过：dynamic 的支持蓝图绑定、能走反射，慢一点；native 的纯 C++ 调用、快，但蓝图碰不到。UI 是蓝图，所以它绑的是 dynamic 那个。</p>
+
+<div class="diagram">
+  <div class="cap">同一个事件，两个版本各管一边（第五阶段埋的伏笔，本篇收）</div>
+  <div class="flow">
+    <div class="box bp"><div class="t">…ItemChanged</div><div class="d">DYNAMIC · 支持蓝图绑定、可序列化<br>走反射，慢 → <b style="color:var(--bp)">UI 绑这个</b></div></div>
+    <span class="arr" style="font-size:16px">同一变化，成对发</span>
+    <div class="box cpp"><div class="t">…ItemChangedNative</div><div class="d">纯 C++ 委托 · 只能 C++ 绑<br>不走反射，快 → <b style="color:var(--cpp)">GAS 等 C++ 逻辑绑这个</b></div></div>
+  </div>
+</div>
+
+<p>数据这边怎么发广播？看 <code>RPGPlayerControllerBase.cpp</code> 里换装备的逻辑，玩家把一件物品放进某个槽位时，最后会调一个 <code>NotifySlottedItemChanged</code>：</p>
+<pre><code><span class="kw">void</span> ARPGPlayerControllerBase::<span class="fn">NotifySlottedItemChanged</span>(FRPGItemSlot ItemSlot, URPGItem* Item)
+{
+    <span class="cmt">// Notify native before blueprint</span>
+    OnSlottedItemChangedNative.<span class="fn">Broadcast</span>(ItemSlot, Item);
+    OnSlottedItemChanged.<span class="fn">Broadcast</span>(ItemSlot, Item);
+
+    <span class="cmt">// Call BP update event</span>
+    <span class="fn">SlottedItemChanged</span>(ItemSlot, Item);
+}</code></pre>
+<p>注意这里的顺序，<strong>先广播 native，再广播给蓝图</strong>。原因是有些 C++ 逻辑（比如 GAS 那边要根据槽位重新授予能力）必须先于 UI 跑完，免得 UI 拿到的是半截状态。</p>
+<div class="tip"><b>顺序不是随手写的　</b>native 在前、dynamic 在后，是为了让 C++（如 GAS 重新授予能力）先把内部状态对齐，UI 再读到的就是「干净」的最终态。</div>
+
+<!-- ===================== 三、刷新链 ===================== -->
+<span class="anchor" id="chain"></span>
+<h2>三、把链子串起来：delegate → 事件 → 刷新</h2>
+<p>现在把整条链按真实流程走一遍。</p>
+<ol>
+  <li><strong>UI 控件出生时去订阅。</strong>打开 <code>WB_EquipmentSlot</code> 的 Graph，找 Event Construct（相当于这个控件的「构造函数」事件）。它拿到玩家控制器，从控制器变量拖出 <code>OnSlottedItemChanged</code>，连一个 <code>Bind Event</code> 节点，绑到自己的刷新函数上。</li>
+  <li><strong>玩家操作触发数据变化。</strong>比如把「火焰斧」拖进武器槽，控制器更新 <code>SlottedItems</code> 这张 map，然后调 <code>NotifySlottedItemChanged</code>。</li>
+  <li><strong>广播。</strong><code>OnSlottedItemChanged.Broadcast(...)</code> 一发，所有订阅过的控件都收到回调，参数告诉它们是哪个槽（<code>FRPGItemSlot</code>）、放进去的是哪件物品（<code>URPGItem*</code>）。</li>
+  <li><strong>每个槽位控件在回调里判断「这个变化的槽是不是我负责的那个」</strong>，是的话就把图标、数量、等级重新设一遍。<code>WB_EquipmentSlot</code> 拿到 <code>URPGItem</code> 后，读它的图标、名字，刷到自己的 Image 和 Text 控件上。</li>
+</ol>
+
+<!-- ★ 关系图 1：UI 自动刷新链路 -->
+<span class="anchor" id="refresh"></span>
+<h3>★ 关系图：数据驱动 UI 的自动刷新链路</h3>
+<div class="diagram">
+  <div class="cap">背包数据变化 → delegate 广播 → WBP_ 绑定的事件 → UI 重画（全程被动，不轮询）</div>
+  <div class="flow">
+    <div class="box cpp"><div class="t">玩家操作</div><div class="d">捡药水 / 换武器</div></div>
+    <span class="arr">→</span>
+    <div class="box cpp"><div class="t">PlayerControllerBase</div><div class="d">更新 InventoryData<br>/ SlottedItems map</div></div>
+    <span class="arr">→<small>调 Notify*</small></span>
+    <div class="box cpp"><div class="t">NotifySlottedItemChanged</div><div class="d">数据层发起通知</div></div>
+  </div>
+  <div class="flow" style="margin:6px 0;"><span class="arr" style="font-size:18px">↓</span></div>
+  <div class="flow">
+    <div class="box cpp" style="border-color:var(--accent2)"><div class="t" style="color:var(--accent2)">Broadcast</div><div class="d">①Native 先发（GAS 等 C++）<br>②Dynamic 后发（给蓝图）</div></div>
+    <span class="arr" style="color:var(--bp)">→<small>dynamic delegate 命中订阅者</small></span>
+    <div class="box bp"><div class="t">WB_EquipmentSlot</div><div class="d">Construct 时已 Bind Event<br>收到回调</div></div>
+  </div>
+  <div class="flow" style="margin:6px 0;"><span class="arr" style="font-size:18px; color:var(--bp)">↓ 回调里判断「是不是我的槽」</span></div>
+  <div class="flow">
+    <div class="box bp"><div class="t">读 URPGItem</div><div class="d">图标 / 名字 / 数量 / 等级</div></div>
+    <span class="arr" style="color:var(--bp)">→</span>
+    <div class="box bp"><div class="t">Image / Text 控件</div><div class="d">Set 一遍 → 界面刷新</div></div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:16px 0 0;">整条链：<b style="color:var(--cpp)">数据改</b> → <b style="color:var(--accent2)">控制器 Broadcast delegate</b> → <b style="color:var(--bp)">订阅的 Widget 收到事件</b> → <b style="color:var(--bp)">Widget 重画自己</b>。改一次画一次，没人空转。</p>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--cpp)"></i>数据层 C++（控制器）</span>
+    <span><i class="dot" style="background:var(--accent2)"></i>广播分发</span>
+    <span><i class="dot" style="background:var(--bp)"></i>UMG Widget 蓝图（WB_）</span>
+  </div>
+</div>
+
+<p>这就是事件驱动比轮询好的地方，没人空转，改一次画一次。<code>WB_InventoryList</code> 也是一样的套路，它订阅的是 <code>OnInventoryItemChanged</code>（捡到/丢弃物品时触发的那个），收到广播后重新生成列表里的 <code>WB_InventoryItem</code> 子控件。</p>
+
+<p>还有个细节值得记一下，进游戏一开始读档完成时，会触发 <code>OnInventoryLoaded</code>：</p>
+<pre><code><span class="cmt">// Load failed but we reset inventory, so need to notify UI</span>
+<span class="fn">NotifyInventoryLoaded</span>();</code></pre>
+<div class="tip"><b>无论成败都要通知 UI　</b>哪怕读档失败、背包被重置成空的，也得发这个广播，否则 UI 会停在旧状态。这种习惯，写界面时记牢。</div>
+
+<!-- ===================== 四、加载屏模块 ===================== -->
+<span class="anchor" id="module"></span>
+<h2>四、加载屏：为什么非得拆成独立模块</h2>
+<p>切到第二个主题。打开 <code>ActionRPG.uproject</code>，看 <code>Modules</code> 段：</p>
+<pre><code><span class="str">"Modules"</span>: [
+    {
+        <span class="str">"Name"</span>: <span class="str">"ActionRPG"</span>,
+        <span class="str">"Type"</span>: <span class="str">"Runtime"</span>,
+        <span class="str">"LoadingPhase"</span>: <span class="str">"Default"</span>
+    },
+    {
+        <span class="str">"Name"</span>: <span class="str">"ActionRPGLoadingScreen"</span>,
+        <span class="str">"Type"</span>: <span class="str">"ClientOnly"</span>,
+        <span class="str">"LoadingPhase"</span>: <span class="str">"PreLoadingScreen"</span>
+    }
+]</code></pre>
+<p>两个模块。主模块 <code>ActionRPG</code> 是 <code>Runtime</code> 类型、<code>Default</code> 阶段加载。加载屏 <code>ActionRPGLoadingScreen</code> 是 <code>ClientOnly</code> 类型、<code>PreLoadingScreen</code> 阶段加载。关键就在这个 <code>LoadingPhase</code>。</p>
+
+<p>UE 启动时模块不是一股脑全加载，而是分阶段来。<code>PreLoadingScreen</code> 这个阶段，顾名思义，比加载屏本身还早，比绝大多数游戏模块都早。<code>Default</code> 则是常规游戏代码加载的阶段，晚得多。</p>
+
+<!-- ★ 关系图 3：模块加载阶段顺序图 -->
+<span class="anchor" id="phase"></span>
+<h3>★ 关系图：模块加载阶段顺序（时间轴）</h3>
+<div class="diagram">
+  <div class="cap">沿启动时间轴：PreLoadingScreen 阶段先起（加载屏），Default 阶段后起（主模块）</div>
+  <div class="flow" style="align-items:stretch; gap:0;">
+    <div class="box cpp" style="min-width:230px; text-align:left; border-color:var(--accent2)">
+      <div class="t" style="color:var(--accent2)">PreLoadingScreen 阶段</div>
+      <div class="d">⏱ 启动极早期<br><b>ActionRPGLoadingScreen</b> 此时加载<br>抢在主模块前，立刻能画加载屏</div>
+    </div>
+    <span class="arr" style="font-size:26px;">───▶<small>时间推进（主模块、资产仍在准备）</small></span>
+    <div class="box cpp" style="min-width:230px; text-align:left;">
+      <div class="t">Default 阶段</div>
+      <div class="d">⏱ 晚得多<br><b>ActionRPG</b> 主模块此时才加载<br>各种 gameplay 资产陆续就绪</div>
+    </div>
+  </div>
+  <div class="flow" style="margin-top:16px;">
+    <div class="box engine" style="border-style:dashed; text-align:left; min-width:100%;">
+      <div class="d" style="line-height:1.7">玩家看到的画面：&nbsp;&nbsp;<b style="color:var(--accent2)">[加载屏一直转圈]</b> ───────▶ <b style="color:var(--accent)">[加载完，进入游戏]</b><br>加载屏的作用，就是填满「主模块还没起来」这段空白，告诉玩家「没卡死，正在加载」。</div>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:16px 0 0;">如果加载屏代码塞在主模块里 → 得等主模块加载完才显示 → 那时加载屏已经没意义了。源码注释：<code>otherwise it will not hook in time!</code></p>
+</div>
+
+<p>现在你应该能想明白这个鸡生蛋的问题了：加载屏的作用，是在主模块、各种资产都还没准备好的那段空白时间里，给玩家一个「程序没卡死，正在加载」的反馈。可如果加载屏的代码本身放在主模块里，那它得等主模块加载完才能显示。等主模块都加载完了，加载屏也就没意义了。</p>
+<p>所以加载屏必须比主模块先加载，那它就<strong>不能</strong>待在主模块里，只能单独成一个模块，并且声明成 <code>PreLoadingScreen</code> 阶段，抢在主模块前头初始化。源码注释把这点说得很直白：</p>
+<pre><code><span class="cmt">// This module must be loaded "PreLoadingScreen" in the .uproject file, otherwise it will not hook in time!</span></code></pre>
+<p>「otherwise it will not hook in time」，否则就来不及挂上去了。</p>
+
+<!-- ===================== 五、不能反向依赖 ===================== -->
+<span class="anchor" id="nodep"></span>
+<h2>五、不能反向依赖主模块</h2>
+<p>既然加载屏比主模块先加载，那它就<strong>绝对不能</strong>引用主模块里的任何类型。道理很硬：主模块这会儿压根还没加载，你去 <code>#include</code> 它的头文件、用它的 <code>URPGItem</code>，链接和加载顺序都会出问题。</p>
+<p>这也是为什么这个加载屏整个用 Slate 手写、连资源路径都是硬编码字符串的原因。看 <code>ActionRPGLoadingScreen.cpp</code>：</p>
+<pre><code><span class="cmt">// Load version of the logo with text baked in, path is hardcoded because this loads very early in startup</span>
+<span class="kw">static const</span> FName <span class="fn">LoadingScreenName</span>(<span class="ty">TEXT</span>(<span class="str">"/Game/UI/T_ActionRPG_TransparentLogo.T_ActionRPG_TransparentLogo"</span>));</code></pre>
+<p>注释明说了，路径硬编码，因为这玩意儿在启动极早期就跑了，那时候资产系统还指望不上，只能直接按路径捞这张 logo 贴图。整个加载界面就是 Slate 拼出来的：一个深灰背景、中间一张 logo、右下角一个转圈的 <code>SThrobber</code>，没有用到任何 UMG Widget 蓝图，也没碰主模块一行代码。</p>
+
+<p>那主模块怎么用这个加载屏？通过接口，不直接 <code>#include</code> 实现。<code>ActionRPGLoadingScreen.h</code> 里只暴露一个纯虚接口：</p>
+<pre><code><span class="kw">class</span> <span class="ty">IActionRPGLoadingScreenModule</span> : <span class="kw">public</span> <span class="ty">IModuleInterface</span>
+{
+<span class="kw">public</span>:
+    <span class="kw">static inline</span> IActionRPGLoadingScreenModule&amp; <span class="fn">Get</span>()
+    {
+        <span class="kw">return</span> FModuleManager::<span class="fn">LoadModuleChecked</span>&lt;IActionRPGLoadingScreenModule&gt;(<span class="str">"ActionRPGLoadingScreen"</span>);
+    }
+
+    <span class="kw">virtual void</span> <span class="fn">StartInGameLoadingScreen</span>(<span class="kw">bool</span> bPlayUntilStopped, <span class="kw">float</span> PlayTime) = <span class="ty">0</span>;
+    <span class="kw">virtual void</span> <span class="fn">StopInGameLoadingScreen</span>() = <span class="ty">0</span>;
+};</code></pre>
+<p>主模块想在关卡切换时弹个加载屏，就走 <code>RPGBlueprintLibrary.cpp</code> 里这段：</p>
+<pre><code>IActionRPGLoadingScreenModule&amp; LoadingScreenModule = IActionRPGLoadingScreenModule::<span class="fn">Get</span>();
+LoadingScreenModule.<span class="fn">StartInGameLoadingScreen</span>(bPlayUntilStopped, PlayTime);</code></pre>
+
+<!-- ★ 关系图 2：加载屏模块关系 -->
+<span class="anchor" id="interface"></span>
+<h3>★ 关系图：加载屏模块的隔离与单向依赖</h3>
+<div class="diagram">
+  <div class="cap">主模块只认接口，依赖单向流动；加载屏不依赖主模块任何东西</div>
+  <div class="flow" style="gap:14px; align-items:stretch;">
+    <div class="vstack" style="justify-content:flex-start;">
+      <div class="box cpp" style="min-width:230px; text-align:left;">
+        <div class="t">ActionRPG（主模块）</div>
+        <div class="d">Runtime · Default 阶段<br>RPGBlueprintLibrary 想弹加载屏</div>
+      </div>
+    </div>
+    <span class="arr" style="color:var(--accent)">──▶<small>只 #include 接口头<br>单向依赖</small></span>
+    <div class="vstack" style="justify-content:flex-start;">
+      <div class="box engine" style="min-width:200px;">
+        <div class="t">IActionRPGLoadingScreenModule</div>
+        <div class="d">纯虚接口 · IModuleInterface<br>Start/StopInGameLoadingScreen</div>
+      </div>
+    </div>
+    <span class="arr" style="color:var(--accent2)">◀──<small>实现接口</small></span>
+    <div class="vstack" style="justify-content:flex-start;">
+      <div class="box cpp" style="min-width:230px; text-align:left; border-color:var(--accent2)">
+        <div class="t" style="color:var(--accent2)">ActionRPGLoadingScreen</div>
+        <div class="d">ClientOnly · PreLoadingScreen<br>纯 Slate 手写 · 硬编码资源路径<br>SThrobber 转圈 + logo</div>
+      </div>
+    </div>
+  </div>
+  <div class="flow" style="margin-top:14px;">
+    <div class="box" style="border-color:#ff6b6b; text-align:left; min-width:100%;">
+      <div class="d" style="color:#ff6b6b;">❌ 反向禁止：加载屏 <b>不能</b> #include 主模块的 URPGItem 等任何类型 —— 它先加载，那时主模块还不存在</div>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:16px 0 0;">为什么必须独立成模块：① 要在主模块前加载（PreLoadingScreen）；② 一旦先加载就不能反依赖主模块；③ 所以只能用 Slate 自给自足、靠接口被单向调用。这套隔离，正是它能安心待在超早加载阶段的前提。</p>
+</div>
+
+<p>主模块只认这个接口，不知道也不关心背后的 Slate 怎么画的。这就是标准的依赖单向流动：主模块依赖加载屏的接口，加载屏不依赖主模块的任何东西。这个隔离让加载屏能安心待在它那个超早的加载阶段。</p>
+<div class="tip"><b>ClientOnly 顺带一提　</b>这个类型是说这模块只在客户端编译进去。专用服务器（dedicated server）跑起来没人看屏幕，要加载屏干嘛，所以服务器构建直接把它剔掉，省体积。</div>
+
+<!-- ===================== 六、异步加载 ===================== -->
+<span class="anchor" id="async"></span>
+<h2>六、异步加载：手机上卡一下是要命的</h2>
+<p>最后聊异步，把阶段四的伏笔收掉。</p>
+<p>阶段四你见过 <code>URPGAssetManager::ForceLoadItem</code>，函数体很短：</p>
+<pre><code>URPGItem* URPGAssetManager::<span class="fn">ForceLoadItem</span>(<span class="kw">const</span> FPrimaryAssetId&amp; PrimaryAssetId, <span class="kw">bool</span> bLogWarning)
+{
+    FSoftObjectPath ItemPath = <span class="fn">GetPrimaryAssetPath</span>(PrimaryAssetId);
+
+    <span class="cmt">// This does a synchronous load and may hitch</span>
+    URPGItem* LoadedItem = <span class="ty">Cast</span>&lt;URPGItem&gt;(ItemPath.<span class="fn">TryLoad</span>());
+    <span class="cmt">// ...</span>
+    <span class="kw">return</span> LoadedItem;
+}</code></pre>
+<p><code>TryLoad()</code> 是同步加载，注释直说了「may hitch」，会卡。它会阻塞当前线程，把整个资产从磁盘读出来、反序列化好，才返回。在这期间游戏整个停住，下一帧都出不来。</p>
+<p>在 PC 上你可能感觉不明显，盘快、内存大，卡个几毫秒过去了。但这个项目的目标平台里有 Android 和 iOS。手机的存储读取慢得多，一次同步加载可能卡掉好几帧，画面直接顿一下。游戏里最忌讳的就是这种掉帧，玩家立刻就能感觉到「卡」。所以移动端基本不能用同步加载，这不是优化建议，是硬约束。</p>
+
+<!-- ★ 关系图 4：同步 vs 异步对比 -->
+<span class="anchor" id="syncasync"></span>
+<h3>★ 关系图：同步 vs 异步加载对比（呼应第四阶段）</h3>
+<div class="diagram">
+  <div class="cap">ForceLoadItem 同步阻塞主线程 vs Asset Manager 异步后台加载</div>
+  <div class="flow" style="gap:30px; align-items:stretch;">
+    <div class="vstack" style="justify-content:flex-start;">
+      <div class="box cpp" style="min-width:250px; text-align:left; border-color:#ff6b6b">
+        <div class="t" style="color:#ff6b6b">ForceLoadItem（同步）</div>
+        <div class="d">TryLoad() 阻塞主线程<br>读盘 + 反序列化都干完才返回<br>📵 手机存储慢 → 掉好几帧</div>
+      </div>
+      <div style="color:#ff6b6b;font-size:13px;">代码简单，但会卡</div>
+      <div class="box" style="border-color:#3a4150; text-align:left; max-width:250px;">
+        <div class="d">只敢用在：读档恢复背包<br>（切场景 / 加载屏遮着，玩家本来就在等）</div>
+      </div>
+    </div>
+    <div class="vstack" style="justify-content:flex-start;">
+      <div class="box engine" style="min-width:250px; text-align:left; border-color:var(--accent2)">
+        <div class="t" style="color:var(--accent2)">Asset Manager（异步）</div>
+        <div class="d">LoadPrimaryAssets 等接口<br>底层 FStreamableManager<br>立刻返回、给回调，后台慢慢读</div>
+      </div>
+      <div style="color:var(--accent2);font-size:13px;">不卡，主线程照常跑</div>
+      <div class="box" style="border-color:#3a4150; text-align:left; max-width:250px;">
+        <div class="d">代价：代码改回调风格<br>要处理「还在加载中」的中间态</div>
+      </div>
+    </div>
+  </div>
+  <div class="flow" style="margin-top:16px;">
+    <div class="box engine" style="border-style:dashed; text-align:left; min-width:100%;">
+      <div class="d" style="line-height:1.7">主线程时间轴对比：<br><b style="color:#ff6b6b">同步</b>：[游戏跑]━━<b style="color:#ff6b6b">[卡住读盘·掉帧]</b>━━[游戏跑]<br><b style="color:var(--accent2)">异步</b>：[游戏跑·画面不停] &nbsp;┄┄(后台线程读盘)┄┄&gt; [回调触发·资产就绪]</div>
+    </div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:16px 0 0;">取舍：要么<b style="color:var(--accent2)">异步</b>不卡但要写回调；要么<b style="color:#ff6b6b">同步</b>简单但会卡、且只敢用在加载屏遮着的地方。平台（Android/iOS）决定了你大部分时候只能选前者。</p>
+</div>
+
+<p>那为什么这项目还在用 <code>ForceLoadItem</code>？看它的调用点，主要是读档恢复背包的时候（<code>RPGPlayerControllerBase.cpp</code> 里 <code>ForceLoadItem(ItemPair.Key)</code>）。读档本来就是切场景、卡在加载屏后面的时机，玩家本来就在等，这时候卡一下藏在加载屏背后没人看得见。换句话说，同步加载只用在「反正要等、又有加载屏遮着」的场合。</p>
+<p>正经的游戏内加载走的是 Asset Manager 的异步接口（<code>LoadPrimaryAssets</code> / <code>LoadPrimaryAssetsWithType</code> 这一类，底层是 <code>FStreamableManager</code>）。异步加载是这样的：你说「我要这几个资产」，给一个加载完成的回调，函数立刻返回不阻塞，引擎在后台一点点把资产读进来，读好了再调你的回调。游戏主线程该跑跑、画面该动动，玩家完全无感。代价是你的代码得改成回调风格，资产到手前那一刻它还没准备好，逻辑上要处理「还在加载中」的中间态。</p>
+<div class="tip"><b>记住这个取舍　</b>要么用异步、不卡但要写回调；要么用同步、简单但会卡，且只敢用在加载屏遮着的地方。平台决定了你大部分时候只能选前者。</div>
+
+<!-- ===================== 七、验收 ===================== -->
+<span class="anchor" id="check"></span>
+<h2>七、验收清单</h2>
+<p>这一阶段过没过，自己对一下：</p>
+<ol>
+  <li><strong>能不能讲清一个 UI 控件怎么随背包数据自动更新？</strong>标准答案：控件在 Construct 时把自己绑到控制器的 dynamic delegate（<code>OnSlottedItemChanged</code> / <code>OnInventoryItemChanged</code>）上，数据一变控制器调 <code>Notify*</code> 广播，控件收到事件回调，重画自己。全程事件驱动，不轮询。</li>
+  <li><strong>能不能解释加载屏为什么独立成模块、且不能反向依赖主模块？</strong>标准答案：加载屏要在主模块加载完之前就显示，所以它声明成 <code>PreLoadingScreen</code> 阶段、抢在主模块前加载；正因为它先加载，主模块那会儿还不存在，它就不能引用主模块的任何类型，只能用 Slate 手写、硬编码资源路径，并通过 <code>IActionRPGLoadingScreenModule</code> 接口被主模块单向调用。</li>
+  <li><strong>能不能说出同步加载在移动端为什么不行？</strong>标准答案：同步加载阻塞主线程会掉帧，手机存储慢更明显，所以游戏内加载必须走异步，同步的 <code>ForceLoadItem</code> 只用在读档这种有加载屏遮挡的时机。</li>
+</ol>
+
+<p style="margin-top:50px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px;">由 <code>UE基础七-UI加载屏与异步.md</code> 生成 · 离线可用单文件 HTML · 关系图为本页新增</p>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ActionRPG 学习计划 · 面向 C++ 程序员的 UE 正向开发入门（关系图解）</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161a22; --panel2:#1d222c; --line:#2b313d;
+    --fg:#e6e9ef; --muted:#9aa4b2; --accent:#5aa9ff; --accent2:#7ee787;
+    --warn:#ffcc66; --cpp:#ff9d7a; --bp:#a78bfa; --cfg:#7ee787;
+    --code-bg:#11151c; --code-fg:#d6deeb;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    line-height:1.85; font-size:16px;
+  }
+  .wrap{display:flex; max-width:1280px; margin:0 auto;}
+  /* 侧边导航 */
+  nav{
+    position:sticky; top:0; align-self:flex-start; height:100vh; overflow:auto;
+    width:240px; padding:24px 16px; border-right:1px solid var(--line);
+    background:var(--panel); font-size:14px; flex:0 0 240px;
+  }
+  nav h2{font-size:13px; color:var(--muted); letter-spacing:1px; margin:0 0 12px;}
+  nav a{display:block; color:var(--fg); text-decoration:none; padding:6px 10px; border-radius:8px; margin-bottom:2px;}
+  nav a:hover{background:var(--panel2); color:var(--accent);}
+  nav a.sub{padding-left:22px; color:var(--muted); font-size:13px;}
+  main{flex:1; min-width:0; padding:36px 48px 120px;}
+  h1{font-size:30px; line-height:1.4; margin:0 0 8px;}
+  .lead{color:var(--muted); font-size:15px; margin-bottom:28px;}
+  h2{font-size:23px; margin:46px 0 14px; padding-top:10px; border-top:1px solid var(--line);}
+  h3{font-size:18px; margin:30px 0 10px; color:var(--accent);}
+  p{margin:12px 0;}
+  code{font-family:"JetBrains Mono","Consolas",monospace; background:#222836; color:#ffd9a0; padding:1px 6px; border-radius:5px; font-size:.9em;}
+  pre{background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow:auto; margin:16px 0;}
+  pre code{background:none; color:var(--code-fg); padding:0; font-size:13.5px; line-height:1.7;}
+  .cmt{color:#6b7689;}
+  .kw{color:#c792ea;} .ty{color:#82aaff;} .str{color:#c3e88d;} .fn{color:#82d9ff;}
+  table{border-collapse:collapse; width:100%; margin:18px 0; font-size:14.5px;}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left;}
+  th{background:var(--panel2); color:var(--accent);}
+  tr:nth-child(even) td{background:#13171f;}
+  strong{color:#fff;}
+  blockquote{border-left:4px solid var(--accent); background:#13171f; padding:10px 16px; border-radius:0 8px 8px 0; margin:18px 0; color:var(--muted);}
+  blockquote a{color:var(--accent);}
+  ul,ol{margin:12px 0; padding-left:26px;}
+  li{margin:6px 0;}
+  a{color:var(--accent);}
+  .tip{border-left:4px solid var(--warn); background:#211d12; padding:12px 16px; border-radius:0 8px 8px 0; margin:18px 0;}
+  .tip b{color:var(--warn);}
+  /* ===== 关系图通用 ===== */
+  .diagram{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; margin:22px 0;}
+  .diagram .cap{font-size:13px; color:var(--muted); margin-bottom:16px; letter-spacing:.5px;}
+  .box{border:1.5px solid var(--line); border-radius:10px; padding:10px 14px; background:var(--panel2); display:inline-block; text-align:center;}
+  .box .t{font-weight:700; font-family:"JetBrains Mono",monospace;}
+  .box .d{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .box.cpp{border-color:var(--cpp);} .box.cpp .t{color:var(--cpp);}
+  .box.bp{border-color:var(--bp);} .box.bp .t{color:var(--bp);}
+  .box.cfg{border-color:var(--cfg);} .box.cfg .t{color:var(--cfg);}
+  .box.engine{border-color:var(--accent);} .box.engine .t{color:var(--accent);}
+  .flow{display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px;}
+  .arr{color:var(--accent); font-size:22px; padding:0 6px; white-space:nowrap;}
+  .arr small{display:block; font-size:11px; color:var(--muted); text-align:center; line-height:1;}
+  .vstack{display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .legend{display:flex; gap:18px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:16px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .anchor{position:relative; top:-10px;}
+  /* 时间占比条 */
+  .bars{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
+  .barrow{display:flex; align-items:center; gap:10px; font-size:13.5px;}
+  .barrow .lab{flex:0 0 132px; color:var(--muted);}
+  .barrow .track{flex:1; background:#13171f; border:1px solid var(--line); border-radius:6px; height:20px; overflow:hidden;}
+  .barrow .fill{height:100%; border-radius:5px;}
+  .barrow .val{flex:0 0 56px; text-align:right; color:var(--muted); font-size:12.5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <h2>目录</h2>
+  <a href="#top">开篇</a>
+  <a href="#map">★ 八阶段进阶总图</a>
+  <a href="#loop">★ 学习方法闭环</a>
+  <a href="#strategy">0 · 学习策略</a>
+  <a href="#s1">阶段一 · 环境与心智</a>
+  <a href="#s2">阶段二 · 基类↔蓝图分工</a>
+  <a href="#s3">阶段三 · 蓝图与编辑器</a>
+  <a href="#s4">阶段四 · Asset Manager</a>
+  <a href="#s5">阶段五 · 背包 / 存档</a>
+  <a href="#s6">阶段六 · GAS（难点）</a>
+  <a href="#s7">阶段七 · UI / 加载屏</a>
+  <a href="#s8">阶段八 · 打包 / 实战</a>
+  <a href="#res">学习资源清单</a>
+  <a href="#milestone">★ 里程碑与耗时</a>
+  <a href="#final">最终建议</a>
+</nav>
+
+<main>
+<span class="anchor" id="top"></span>
+<h1>ActionRPG 学习计划<br>面向 C++ 程序员的 UE 正向开发入门</h1>
+<p class="lead">基于 Epic 官方 ActionRPG 示例（UE 4.27.2）　|　面向有扎实 C++ 基础、未做过 UE 正向开发的工程师　|　本页在原 Markdown 计划基础上新增了一组关系图，把八个阶段、学习方法与耗时分布串成可视化的网。</p>
+
+<blockquote>
+  <p>目标读者：有扎实 C++ 基础、<strong>未做过 UE 正向开发</strong>的工程师。<br>
+  学习载体：Epic 官方 <strong>ActionRPG</strong> 示例（UE 4.27.2），本仓库即该项目。<br>
+  官方文档：<a href="https://dev.epicgames.com/documentation/unreal-engine/action-rpg-game?application_version=4.27">dev.epicgames.com/.../action-rpg-game</a><br>
+  配套阅读：仓库根目录 <code>CLAUDE.md</code>（已总结了完整架构，建议每个阶段对照看）。</p>
+</blockquote>
+
+<!-- ===================== 关系总图 ===================== -->
+<span class="anchor" id="map"></span>
+<h2>★ 先看一张图：八个阶段怎么进阶</h2>
+<p>整个计划是一条单向进阶链。前一阶段是后一阶段的地基，每个阶段都遵循同样的套路：在 <code>Source/</code> 找 C++ 基类当锚点，再到 <code>Content/</code> 看蓝图装配。其中<strong>阶段六 GAS 是公认的时间黑洞</strong>，几乎占去全程一半时间。</p>
+
+<div class="diagram">
+  <div class="cap">八阶段进阶依赖链：环境 → 架构 → 蓝图 → 数据资产 → 背包 → GAS → UI → 打包</div>
+  <div class="flow">
+    <div class="box engine"><div class="t">① 环境</div><div class="d">能编译能跑</div></div>
+    <span class="arr">→</span>
+    <div class="box cpp"><div class="t">② 架构</div><div class="d">基类↔蓝图</div></div>
+    <span class="arr">→</span>
+    <div class="box bp"><div class="t">③ 蓝图</div><div class="d">能读图表</div></div>
+    <span class="arr">→</span>
+    <div class="box cfg"><div class="t">④ 数据资产</div><div class="d">Asset Mgr</div></div>
+  </div>
+  <div class="flow" style="margin-top:10px;">
+    <div class="box"><div class="t">⑤ 背包/存档</div><div class="d">delegate 广播</div></div>
+    <span class="arr">→</span>
+    <div class="box" style="border-color:#ff6b6b"><div class="t" style="color:#ff6b6b">⑥ GAS ⚠</div><div class="d">核心 · 难点 · 时间黑洞</div></div>
+    <span class="arr">→</span>
+    <div class="box"><div class="t">⑦ UI/加载屏</div><div class="d">UMG · 异步</div></div>
+    <span class="arr">→</span>
+    <div class="box"><div class="t">⑧ 打包/实战</div><div class="d">毕业项目</div></div>
+  </div>
+  <div class="tip" style="margin-top:18px;"><b>难点提示　</b>阶段六 GAS 预计 7–10 天，远超其它阶段。计划明确写道：<strong>不要赶进度，宁可在阶段六多停留</strong>。它也是 ActionRPG 这个示例存在的主要原因。</div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--accent)"></i>引擎/运行时</span>
+    <span><i class="dot" style="background:var(--cpp)"></i>C++（Source/）</span>
+    <span><i class="dot" style="background:var(--bp)"></i>蓝图（Content/）</span>
+    <span><i class="dot" style="background:var(--cfg)"></i>配置/数据</span>
+    <span><i class="dot" style="background:#ff6b6b"></i>难点</span>
+  </div>
+</div>
+
+<!-- ===================== 学习方法闭环 ===================== -->
+<span class="anchor" id="loop"></span>
+<h2>★ 贯穿全程的学习方法：一个闭环</h2>
+<p>无论学哪个阶段，方法都一样，且循环往复：<strong>先在 C++ 找锚点 → 再去蓝图看装配 → 改一点就跑、观察运行</strong>。三步走完回到第一步，逐步上浮。</p>
+
+<div class="diagram">
+  <div class="cap">代码 ↔ 蓝图 ↔ 运行的三步闭环（每个系统都这样啃）</div>
+  <div class="flow">
+    <div class="vstack">
+      <div class="box cpp" style="min-width:180px"><div class="t">① C++ 基类</div><div class="d"><code>Source/</code> 里找 <code>RPG*Base</code><br>读懂它暴露了什么</div></div>
+      <div style="color:var(--cpp);font-size:12.5px">你的主场 · 当锚点</div>
+    </div>
+    <span class="arr">→<small>向上追子类</small></span>
+    <div class="vstack">
+      <div class="box bp" style="min-width:180px"><div class="t">② 蓝图子类</div><div class="d"><code>Content/</code> 里找 <code>BP_*</code><br>看设计师接了什么</div></div>
+      <div style="color:var(--bp);font-size:12.5px">数据与调参在这</div>
+    </div>
+    <span class="arr">→<small>改一个小东西</small></span>
+    <div class="vstack">
+      <div class="box engine" style="min-width:180px"><div class="t">③ 运行观察</div><div class="d">编译 → Play → 看效果<br>GC / 加载时机 / 复制</div></div>
+      <div style="color:var(--accent);font-size:12.5px">静态读代码会漏一半</div>
+    </div>
+  </div>
+  <div class="flow" style="margin-top:14px;">
+    <span class="arr" style="font-size:15px;color:var(--muted)">↺ 回到 ① 进入下一个系统，逐步从 C++ 上浮到蓝图与编辑器</span>
+  </div>
+</div>
+
+<div class="tip"><b>核心认知　</b>UE 里 C++ 基类几乎从不直接使用，而是被蓝图继承后再在配置里引用。例如 <code>Config/DefaultEngine.ini</code> 指向的是 <code>BP_GameMode_C</code> 而不是 C++ 的 <code>ARPGGameModeBase</code>。理解这一<strong>“C++ 定义能力、蓝图装配数据”</strong>的分工，是 UE 正向开发的核心思维转变。</div>
+
+<!-- ===================== 0 学习策略 ===================== -->
+<span class="anchor" id="strategy"></span>
+<h2>0 · 学习策略（先读这一段）</h2>
+<p>作为 C++ 程序员，你的优势和陷阱很明确：</p>
+<ul>
+  <li><strong>优势</strong>：能直接看 <code>Source/</code> 里的 C++ 源码，理解类继承、内存、模板。ActionRPG 的核心系统恰好都在 C++ 里。</li>
+  <li><strong>陷阱</strong>：UE 不是“普通 C++”。它有自己的一套对象系统（<code>UObject</code>/反射/GC）、宏（<code>UCLASS</code>/<code>UPROPERTY</code>/<code>UFUNCTION</code>）、编辑器工作流，以及<strong>大量逻辑在蓝图里而不在 C++ 里</strong>。本项目“几乎所有 gameplay 逻辑都在 <code>Content/</code> 的蓝图中，C++ 只提供可被蓝图继承的基类”。</li>
+</ul>
+<p>因此本计划的主线是：<strong>用你能读懂的 C++ 当锚点，逐步上浮到蓝图与编辑器</strong>，而不是反过来从零学引擎。</p>
+<p><strong>学习方法贯穿全程</strong>：</p>
+<ol>
+  <li>每学一个系统，先在 C++ 里找到基类（<code>RPG*Base</code>），读懂它暴露了什么。</li>
+  <li>再去编辑器里找到对应的蓝图子类（<code>BP_*</code>），看设计师在上面接了什么。</li>
+  <li>最后改一个小东西、运行、观察 —— 形成“代码↔蓝图↔运行”的闭环。</li>
+</ol>
+
+<!-- ===================== 阶段一 ===================== -->
+<span class="anchor" id="s1"></span>
+<h2>阶段一：环境与引擎心智模型（约 2–3 天）</h2>
+<p><strong>目标</strong>：能编译、能打开、能运行，并建立 UE 的基本世界观。</p>
+<h3>任务</h3>
+<ol>
+  <li><strong>跑通工具链</strong>（参考 <code>CLAUDE.md</code> 的 Build &amp; run 段）：
+    <ul>
+      <li>生成 VS 工程文件（右键 <code>.uproject</code> → Generate Visual Studio project files）。</li>
+      <li>用 <code>Build.bat ActionRPGEditor Win64 Development</code> 编译编辑器目标。</li>
+      <li>用 <code>UE4Editor.exe ActionRPG.uproject</code> 打开项目，按 Play 进游戏，先把它当玩家玩一遍。</li>
+    </ul>
+  </li>
+  <li><strong>认识两个 Target</strong>：<code>ActionRPGTarget</code>（打包游戏）vs <code>ActionRPGEditorTarget</code>（编辑器）。看 <code>Source/*.Target.cs</code>。</li>
+  <li><strong>认识模块</strong>：<code>ActionRPG</code>（Runtime 主模块）和 <code>ActionRPGLoadingScreen</code>（独立模块，只为让加载屏在主模块之前初始化）。读 <code>ActionRPG.uproject</code> 的 <code>Modules</code> 段和 <code>Source/ActionRPG/ActionRPG.Build.cs</code>。</li>
+</ol>
+<h3>必须建立的概念（UE 与普通 C++ 的差异）</h3>
+<ul>
+  <li><strong>UObject 体系</strong>：反射、垃圾回收（GC）、<code>UPROPERTY</code> 让指针被 GC 追踪。普通裸指针指向 UObject 是危险的。</li>
+  <li><strong>核心宏</strong>：<code>UCLASS / USTRUCT / UENUM / UPROPERTY / UFUNCTION</code> 各自的作用与常用修饰符（<code>EditAnywhere</code>、<code>BlueprintReadWrite</code>、<code>BlueprintCallable</code>、<code>Category</code>）。</li>
+  <li><strong>命名前缀规则</strong>：<code>U</code>=UObject、<code>A</code>=Actor、<code>F</code>=struct、<code>I</code>=interface、<code>E</code>=enum；本项目额外加 <code>RPG</code> 前缀。</li>
+  <li><strong><code>ACTIONRPG_API</code> 导出宏</strong>：所有 public 类型都带它（DLL 导出）。</li>
+  <li><strong>模块的 Build.cs</strong>：相当于 UE 版的依赖声明，本模块依赖 <code>GameplayAbilities / GameplayTags / GameplayTasks / AIModule</code>。</li>
+</ul>
+<h3>验收</h3>
+<ul>
+  <li>能独立完成“改一行 C++ → 编译 → 运行看到效果”。</li>
+  <li>能说清 Actor、Component、GameMode、GameInstance、PlayerController 各自是什么、生命周期如何。</li>
+</ul>
+
+<!-- ===================== 阶段二 ===================== -->
+<span class="anchor" id="s2"></span>
+<h2>阶段二：项目骨架与“C++ 基类 ↔ 蓝图子类”分工（约 3–4 天）</h2>
+<p><strong>目标</strong>：彻底理解本项目“原生基类被蓝图化”的架构惯例 —— 这是读懂全项目的钥匙。</p>
+<p><a href="ActionRPG学习计划/UE基础二-基类与蓝图子类的分工.html">→ 本阶段有配套图解详情页：基类与蓝图子类的分工</a></p>
+<h3>任务</h3>
+<ol>
+  <li><strong>追一条配置链</strong>：打开 <code>Config/DefaultEngine.ini</code>，找到：
+    <ul>
+      <li><code>GameInstanceClass=/Game/Blueprints/BP_GameInstance.BP_GameInstance_C</code></li>
+      <li><code>GlobalDefaultGameMode=/Game/Blueprints/BP_GameMode.BP_GameMode_C</code></li>
+      <li><code>AssetManagerClassName=/Script/ActionRPG.RPGAssetManager</code>（注意：这个直接指向 C++ 类）</li>
+    </ul>
+    对每一条，分别找到 C++ 基类（<code>Source/</code>）和蓝图子类（编辑器 <code>Content/Blueprints/</code>），对比“基类定义了什么、蓝图加了什么”。
+  </li>
+  <li><strong>读懂一对基类/子类</strong>：以 <code>ARPGGameModeBase</code>（C++）↔ <code>BP_GameMode</code>（蓝图）为例，理解 <code>BlueprintImplementableEvent</code>（C++ 声明、蓝图实现）和 <code>BlueprintCallable</code>（C++ 实现、蓝图调用）这两种方向相反的桥接方式。</li>
+  <li><strong>理解 <code>RPGTypes.h</code> 的角色</strong>：项目约定把“共享 enum / struct / <strong>所有 delegate 声明</strong>”集中放这里以避免递归 include。先通读一遍，混个眼熟。</li>
+</ol>
+
+<div class="diagram">
+  <div class="cap">核心关系：配置文件 → 蓝图子类 → C++ 基类（引擎实际运行的是中间那层）</div>
+  <div class="flow">
+    <div class="box cfg"><div class="t">DefaultEngine.ini</div><div class="d">配置：指定用谁</div></div>
+    <span class="arr">→<small>字符串路径引用</small></span>
+    <div class="box bp"><div class="t">BP_GameMode_C</div><div class="d">蓝图子类 · 装配数据</div></div>
+    <span class="arr">→<small>继承 extends</small></span>
+    <div class="box cpp"><div class="t">ARPGGameModeBase</div><div class="d">C++ 基类 · 定义能力</div></div>
+  </div>
+</div>
+
+<h3>验收</h3>
+<ul>
+  <li>给定任意一个 <code>RPG*Base</code> 类，你能预测“它一定有个 <code>BP_*</code> 子类在 Content 里”，并能在编辑器里找到它。</li>
+  <li>能解释 <code>BlueprintImplementableEvent</code> 和 <code>BlueprintCallable</code> 的区别与各自使用场景。</li>
+</ul>
+
+<!-- ===================== 阶段三 ===================== -->
+<span class="anchor" id="s3"></span>
+<h2>阶段三：蓝图与编辑器工作流（约 4–5 天，本阶段最反直觉）</h2>
+<p><strong>目标</strong>：作为 C++ 程序员最容易跳过、但绝不能跳过的部分 —— 让你能“读”蓝图、能做基础编辑器操作。</p>
+<h3>任务</h3>
+<ol>
+  <li><strong>蓝图可视化脚本基础</strong>：在编辑器里打开几个 <code>BP_*</code> 资产，看 Event Graph：执行引脚（白线）vs 数据引脚（彩色线）、节点、函数、事件、变量。重点能“读懂”而非“精通画图”。</li>
+  <li><strong>编辑器五件套</strong>：内容浏览器（Content Browser）、关卡编辑器（Viewport/Outliner）、细节面板（Details）、蓝图编辑器、数据资产编辑器。各自干什么。</li>
+  <li><strong>关卡（Map）</strong>：打开 <code>Content/Maps/</code> 里的关卡（如当前 git status 中改动的 <code>ActionRPG_Dungeon02_Lights.umap</code>），理解关卡 = Actor 的容器。注意 <code>.umap</code>/<code>.uasset</code> 是二进制，<strong>只能在编辑器里改，不能用文本工具 diff</strong>。</li>
+  <li><strong>C++ ↔ 蓝图协作实操</strong>：在某个 <code>RPG*Base</code> 里新增一个 <code>UFUNCTION(BlueprintCallable)</code>，编译后到对应蓝图里把它连进 Event Graph，运行验证。</li>
+</ol>
+<h3>给 C++ 程序员的提醒</h3>
+<ul>
+  <li>不要试图把所有逻辑搬回 C++。UE 正向开发的常态就是 C++/蓝图混合，设计师面向的数据与调参留在蓝图/数据资产。</li>
+  <li>二进制资产的版本管理：本项目用 Git，但 <code>.uasset</code>/<code>.umap</code> 无法合并，团队里靠“资产独占/沟通”避免冲突。</li>
+</ul>
+<h3>验收</h3>
+<ul>
+  <li>能独立打开任意蓝图、看懂主要的事件流。</li>
+  <li>能完成“C++ 加函数 → 蓝图调用 → 运行”的往返。</li>
+</ul>
+
+<!-- ===================== 阶段四 ===================== -->
+<span class="anchor" id="s4"></span>
+<h2>阶段四：Asset Manager 与 Primary Data Assets（约 3–4 天）</h2>
+<p><strong>目标</strong>：理解 UE 推荐的“数据驱动 + 按需异步加载”资产管理范式。这是 ActionRPG 区别于教学 demo 的工程化亮点。</p>
+<h3>任务（对照 <code>CLAUDE.md</code> 的 "Items are Primary Data Assets" 段）</h3>
+<ol>
+  <li><strong>读 <code>URPGItem</code></strong>（<code>Items/RPGItem.h</code>）：抽象 <code>UPrimaryDataAsset</code>，是所有物品的基类。</li>
+  <li><strong>看四个具体子类</strong>：<code>URPGPotionItem / URPGSkillItem / URPGTokenItem / URPGWeaponItem</code>，各自有不同的 <code>FPrimaryAssetType</code>。</li>
+  <li><strong>看类型常量</strong>：这些 type 字符串常量是 <code>URPGAssetManager</code> 上的静态成员（<code>PotionItemType</code> 等）。</li>
+  <li><strong>看注册配置</strong>：<code>Config/DefaultGame.ini</code> 的 <code>[/Script/Engine.AssetManagerSettings] PrimaryAssetTypesToScan</code>，每个 type 映射到 <code>Content/Items/&lt;Type&gt;</code> 目录，<code>CookRule=AlwaysCook</code>。</li>
+  <li><strong>理解加载</strong>：<code>URPGAssetManager::ForceLoadItem</code> 是同步加载（会卡顿）且不持有引用；物品到处用 <code>FPrimaryAssetId</code> 标识。</li>
+</ol>
+<h3>动手练习（强烈推荐）</h3>
+<p><strong>新增一个物品类型</strong>，体会“三处同步修改”的约束。漏一处就不会被扫描到：</p>
+
+<div class="diagram">
+  <div class="cap">跨阶段关系点：新增物品类型，三处必须同步改（缺一处则扫描不到）</div>
+  <div class="flow">
+    <div class="box cpp"><div class="t">① 新 C++ 子类</div><div class="d">继承 URPGItem<br>定义新 FPrimaryAssetType</div></div>
+    <span class="arr">＋</span>
+    <div class="box cpp"><div class="t">② RPGAssetManager</div><div class="d">加 FPrimaryAssetType<br>静态常量</div></div>
+    <span class="arr">＋</span>
+    <div class="box cfg"><div class="t">③ DefaultGame.ini</div><div class="d">加 PrimaryAssetTypesToScan<br>条目 → Content/Items/&lt;Type&gt;</div></div>
+  </div>
+  <div class="flow" style="margin-top:12px;">
+    <span class="arr" style="font-size:15px">⟹</span>
+    <div class="box engine"><div class="t">Asset Manager 才扫描得到</div><div class="d">三者缺一不可</div></div>
+  </div>
+</div>
+
+<h3>验收</h3>
+<ul>
+  <li>能解释 PrimaryAssetId、PrimaryAssetType、同步 vs 异步加载的取舍。</li>
+  <li>独立完成新增物品类型并在编辑器里创建出一个该类型的数据资产。</li>
+</ul>
+
+<!-- ===================== 阶段五 ===================== -->
+<span class="anchor" id="s5"></span>
+<h2>阶段五：背包 / 存档系统（约 3–4 天）</h2>
+<p><strong>目标</strong>：理解“数据存哪、谁是 source of truth、如何异步持久化、如何用 delegate 广播变化”。</p>
+<h3>任务（对照 <code>CLAUDE.md</code> 的 "Inventory" 段）</h3>
+<ol>
+  <li><strong>背包归属</strong>：<code>ARPGPlayerControllerBase</code> 实现 <code>IRPGInventoryInterface</code>，拥有两张权威 map：
+    <ul>
+      <li><code>InventoryData : TMap&lt;URPGItem*, FRPGItemData&gt;</code></li>
+      <li><code>SlottedItems : TMap&lt;FRPGItemSlot, URPGItem*&gt;</code></li>
+    </ul>
+  </li>
+  <li><strong>接口的意义</strong>：<code>IRPGInventoryInterface</code> 是 native-only（<code>CannotImplementInterfaceInBlueprint</code>），让 <code>ARPGCharacterBase</code> 无需向下转型就能读背包。理解 UE interface 与普通 C++ 多继承的差别。</li>
+  <li><strong>持久化链路</strong>：经 <code>URPGGameInstanceBase</code> —— 它持有 <code>CurrentSaveGame</code>(<code>URPGSaveGame</code>)、<code>DefaultInventory</code>、<code>ItemSlotsPerType</code>。存读档是异步的：<code>WriteSaveGame / HandleAsyncSave / LoadOrCreateSaveGame</code>。</li>
+  <li><strong>变化广播</strong>：背包改动通过 <code>RPGTypes.h</code> 里的 delegate 传播，<strong>每个变化都有 dynamic（蓝图可绑定，如 <code>FOnInventoryItemChanged</code>）和 native（<code>*Native</code>）两个版本</strong>。理解为什么要两套。</li>
+</ol>
+
+<div class="diagram">
+  <div class="cap">背包数据流：谁是权威 → 改动如何广播 → 谁来响应</div>
+  <div class="flow">
+    <div class="box cpp"><div class="t">PlayerController</div><div class="d">InventoryData / SlottedItems<br>source of truth</div></div>
+    <span class="arr">改动 →</span>
+    <div class="vstack">
+      <div class="box bp"><div class="t">…ItemChanged</div><div class="d">DYNAMIC · 蓝图可绑 · 慢</div></div>
+      <div class="box cpp"><div class="t">…ItemChangedNative</div><div class="d">纯 C++ · 不走反射 · 快</div></div>
+    </div>
+    <span class="arr">→</span>
+    <div class="vstack">
+      <div class="box bp"><div class="t">UI 刷新</div><div class="d">背包界面（阶段七）</div></div>
+      <div class="box cpp"><div class="t">能力同步</div><div class="d">槽位授予能力（阶段六）</div></div>
+    </div>
+  </div>
+  <div class="flow" style="margin-top:12px;">
+    <span class="arr" style="font-size:15px;color:var(--muted)">GameInstance 持有 SaveGame，异步 WriteSaveGame / LoadOrCreateSaveGame 落盘</span>
+  </div>
+</div>
+
+<h3>验收</h3>
+<ul>
+  <li>能画出“修改背包 → 触发哪些 delegate → UI/能力如何响应”的数据流。</li>
+  <li>能解释 dynamic delegate（支持蓝图、<code>UFUNCTION</code> 绑定）vs native delegate（纯 C++、更快）的取舍。</li>
+</ul>
+
+<!-- ===================== 阶段六 ===================== -->
+<span class="anchor" id="s6"></span>
+<h2>阶段六：GameplayAbilities（GAS）—— 本项目的核心与难点（约 7–10 天）</h2>
+<p><strong>目标</strong>：这是 ActionRPG 存在的主要原因，也是 UE 里出了名陡峭的系统。<strong>建议拆成多个小阶段，配合官方 GAS 文档慢啃。</strong></p>
+<div class="tip"><b>时间黑洞　</b>本阶段预计 7–10 天，是耗时最长的一段。不要赶进度，宁可在这里多停留。</div>
+
+<h3>6.1 GAS 总览与组件</h3>
+<ul>
+  <li><code>ARPGCharacterBase</code> 实现 <code>IAbilitySystemInterface</code>，拥有 <code>URPGAbilitySystemComponent</code>(ASC) 和 <code>URPGAttributeSet</code>，是连接背包与能力的枢纽。</li>
+  <li>先建立四大件的心智模型：<strong>ASC（能力系统组件）、GameplayAbility（能力）、GameplayEffect（效果）、AttributeSet（属性集）、GameplayTag（标签）</strong>。</li>
+</ul>
+
+<h3>6.2 属性与伤害管线（C++ 程序员最容易读懂的切入点）</h3>
+<ul>
+  <li><code>URPGAttributeSet</code> 定义全部属性：Health、MaxHealth、Mana、MaxMana、AttackPower、DefensePower、MoveSpeed，以及一个临时属性 <code>Damage</code>。</li>
+  <li><strong>伤害管线</strong>（对照 <code>CLAUDE.md</code> 的 "Damage pipeline summary"）：</li>
+</ul>
+
+<div class="diagram">
+  <div class="cap">伤害管线：从一次攻击到 Health 下降再到蓝图事件</div>
+  <div class="flow">
+    <div class="box bp"><div class="t">攻击/能力</div><div class="d">施加 GameplayEffect</div></div>
+    <span class="arr">→</span>
+    <div class="box cpp"><div class="t">RPGDamageExecution</div><div class="d">base + AttackPower − DefensePower<br>算出 Damage</div></div>
+    <span class="arr">→</span>
+    <div class="box cpp"><div class="t">PostGameplayEffectExecute</div><div class="d">Damage → −Health</div></div>
+  </div>
+  <div class="flow" style="margin-top:10px;">
+    <span class="arr">↓</span>
+  </div>
+  <div class="flow">
+    <div class="box cpp"><div class="t">HandleDamage</div><div class="d">character 回调（friend）</div></div>
+    <span class="arr">→</span>
+    <div class="box bp"><div class="t">OnDamaged / OnKilled</div><div class="d">BlueprintImplementableEvent</div></div>
+  </div>
+</div>
+
+<ul>
+  <li>重点理解 <code>AttributeSet</code> 被 <code>friend</code> 给 character，并回调 <code>HandleDamage</code>/<code>HandleHealthChanged</code>，这些再触发 <code>BlueprintImplementableEvent</code>。</li>
+</ul>
+
+<h3>6.3 能力与效果容器</h3>
+<ul>
+  <li><code>URPGGameplayAbility</code> 加了 <code>EffectContainerMap</code>(<code>FGameplayTag → FRPGGameplayEffectContainer</code>)，让设计师按“触发标签”成套施加效果。</li>
+  <li><code>MakeEffectContainerSpec</code> / <code>ApplyEffectContainerSpec</code>（类型在 <code>Abilities/RPGAbilityTypes.h</code>）把“构建效果 spec”与“施加”分离。</li>
+</ul>
+
+<h3>6.4 物品槽授予能力（把 GAS 和背包打通）</h3>
+<ul>
+  <li><code>URPGItem::GrantedAbility</code> 把物品绑定到 <code>URPGGameplayAbility</code>。</li>
+  <li>character 维护 <code>FRPGItemSlot → FGameplayAbilitySpecHandle</code> 的 <code>SlottedAbilities</code>；当背包槽位变化（<code>OnItemSlotChanged</code>）时，<code>RefreshSlottedGameplayAbilities</code> / <code>FillSlottedAbilitySpecs</code> 负责同步授予/移除能力；<code>DefaultSlottedAbilities</code> 覆盖背包加载前的情况。</li>
+</ul>
+
+<h3>6.5 自定义能力任务与标签</h3>
+<ul>
+  <li><code>RPGAbilityTask_PlayMontageAndWaitForEvent</code>：把蒙太奇（动画）播放与 gameplay 事件等待结合的自定义 AbilityTask。</li>
+  <li>标签定义在 <code>Config/DefaultGameplayTags.ini</code>。</li>
+</ul>
+
+<h3>动手练习</h3>
+<ul>
+  <li>给玩家新增一个属性（如 CritChance），让它参与 <code>URPGDamageExecution</code> 的计算，并在 UI 上显示。这能串起属性集、执行计算、伤害管线、UI 绑定四块。</li>
+</ul>
+<h3>验收</h3>
+<ul>
+  <li>能口述完整伤害管线，从输入攻击到 Health 下降到蓝图事件。</li>
+  <li>能解释 GameplayEffect 的三种 duration（Instant/Duration/Infinite）和 GameplayTag 在能力激活/拦截中的作用。</li>
+</ul>
+
+<!-- ===================== 阶段七 ===================== -->
+<span class="anchor" id="s7"></span>
+<h2>阶段七：UI（UMG）、加载屏与异步（约 3–4 天）</h2>
+<p><strong>目标</strong>：理解 UE 的 UI 框架和“为什么要有独立的加载屏模块”。</p>
+<h3>任务</h3>
+<ol>
+  <li><strong>UMG 基础</strong>：在编辑器里打开 <code>Content/UI/</code> 的 Widget 蓝图，看背包 UI 如何绑定到阶段五的 delegate 上自动刷新。</li>
+  <li><strong>加载屏模块</strong>：<code>ActionRPGLoadingScreen</code> 是 <code>ClientOnly</code> + <code>PreLoadingScreen</code> 阶段的独立模块，只为在主模块加载前就能显示影片/加载屏；通过 <code>IActionRPGLoadingScreenModule</code> 接口访问，且<strong>不能依赖 ActionRPG runtime 类型</strong>。理解 UE 模块加载阶段（LoadingPhase）的意义。</li>
+  <li><strong>异步加载</strong>：把阶段四的 <code>ForceLoadItem</code>（同步、会卡顿）和资产管理器的异步加载对比，理解移动端为什么必须异步。</li>
+</ol>
+<h3>验收</h3>
+<ul>
+  <li>能解释一个 UI 控件如何随背包数据变化自动更新（delegate → 事件 → 刷新）。</li>
+  <li>能解释为什么加载屏要做成独立模块、且不能反向依赖主模块。</li>
+</ul>
+
+<!-- ===================== 阶段八 ===================== -->
+<span class="anchor" id="s8"></span>
+<h2>阶段八：打包、平台与综合实战（约 4–5 天）</h2>
+<p><strong>目标</strong>：跑通完整产出链，并独立完成一个贯穿全栈的功能。</p>
+<h3>任务</h3>
+<ol>
+  <li><strong>打包</strong>：用 <code>ActionRPGTarget</code> 打一个 WindowsNoEditor 包（仓库已有 <code>Build/WindowsNoEditor/</code> 产物可参考），理解 Cook、<code>AlwaysCook</code> 规则、打包 vs 编辑器运行的差异。</li>
+  <li><strong>平台意识</strong>：目标平台是 Android / iOS / WindowsNoEditor / MacNoEditor；<code>ActionRPG.Build.cs</code> 为 iOS/Android 条件性加 OnlineSubsystem 依赖。了解移动端约束如何反向影响了前面所有架构决策（异步加载、数据驱动、GAS 网络化）。</li>
+  <li><strong>毕业项目（任选其一，建议做完整）</strong>：
+    <ul>
+      <li>新增一件<strong>武器</strong>：新建 <code>URPGWeaponItem</code> 数据资产 → 绑定一个新的 <code>URPGGameplayAbility</code> → 该能力施加自定义 <code>GameplayEffect</code> → 在 UI 槽位里装备它 → 运行验证伤害与动画。</li>
+      <li>这个项目会强制你把阶段四（数据资产）、五（背包/装备槽）、六（GAS/能力/效果）、七（UI）全部串起来。</li>
+    </ul>
+  </li>
+</ol>
+
+<div class="diagram">
+  <div class="cap">跨阶段关系点：毕业项目“新增一件武器”把四大系统串成一条链</div>
+  <div class="flow">
+    <div class="box cfg"><div class="t">阶段四</div><div class="d">URPGWeaponItem<br>数据资产</div></div>
+    <span class="arr">→</span>
+    <div class="box" style="border-color:#ff6b6b"><div class="t" style="color:#ff6b6b">阶段六</div><div class="d">绑定能力<br>施加 GameplayEffect</div></div>
+    <span class="arr">→</span>
+    <div class="box cpp"><div class="t">阶段五</div><div class="d">装进背包/装备槽</div></div>
+    <span class="arr">→</span>
+    <div class="box bp"><div class="t">阶段七</div><div class="d">UI 槽位装备<br>运行验证伤害/动画</div></div>
+  </div>
+</div>
+
+<h3>验收</h3>
+<ul>
+  <li>独立打出一个可运行的包。</li>
+  <li>独立完成毕业项目，并能讲清它如何贯穿 Asset Manager → 背包 → GAS → UI。</li>
+</ul>
+
+<!-- ===================== 资源 ===================== -->
+<span class="anchor" id="res"></span>
+<h2>学习资源清单</h2>
+<table>
+  <tr><th>主题</th><th>资源</th></tr>
+  <tr><td>本项目官方文档</td><td><a href="https://dev.epicgames.com/documentation/unreal-engine/action-rpg-game?application_version=4.27">dev.epicgames.com/.../action-rpg-game</a></td></tr>
+  <tr><td>本仓库架构总结</td><td>根目录 <code>CLAUDE.md</code>（每阶段必读）</td></tr>
+  <tr><td>GameplayAbilities 系统</td><td>官方 GAS 文档 + 社区经典《GASDocumentation》</td></tr>
+  <tr><td>UObject / 反射 / GC</td><td>官方 "Gameplay Architecture" / "Unreal Object Handling"</td></tr>
+  <tr><td>Asset Manager</td><td>官方 "Asset Management" 文档</td></tr>
+  <tr><td>UMG</td><td>官方 "UMG UI Designer" 文档</td></tr>
+</table>
+
+<!-- ===================== 里程碑 ===================== -->
+<span class="anchor" id="milestone"></span>
+<h2>进度建议与里程碑</h2>
+<table>
+  <tr><th>阶段</th><th>主题</th><th>预计耗时</th><th>里程碑</th></tr>
+  <tr><td>一</td><td>环境 + 引擎心智模型</td><td>2–3 天</td><td>改 C++ → 编译 → 运行闭环</td></tr>
+  <tr><td>二</td><td>C++ 基类↔蓝图子类分工</td><td>3–4 天</td><td>能追配置链到基类与子类</td></tr>
+  <tr><td>三</td><td>蓝图与编辑器工作流</td><td>4–5 天</td><td>能读蓝图、做 C++↔蓝图往返</td></tr>
+  <tr><td>四</td><td>Asset Manager / 数据资产</td><td>3–4 天</td><td>新增物品类型成功</td></tr>
+  <tr><td>五</td><td>背包 / 存档</td><td>3–4 天</td><td>画出背包数据流</td></tr>
+  <tr><td>六</td><td><strong>GAS（核心难点）</strong></td><td>7–10 天</td><td>口述伤害管线 + 加新属性</td></tr>
+  <tr><td>七</td><td>UI / 加载屏 / 异步</td><td>3–4 天</td><td>解释 UI 自动刷新机制</td></tr>
+  <tr><td>八</td><td>打包 + 毕业项目</td><td>4–5 天</td><td>打包 + 新增武器全栈打通</td></tr>
+</table>
+<blockquote><p>总计约 <strong>5–6 周</strong>（按每天 3–4 小时估算）。GAS 是最大的时间黑洞，不要赶进度，宁可在阶段六多停留。</p></blockquote>
+
+<div class="diagram">
+  <div class="cap">各阶段预计耗时占比（取每阶段天数上限，直观看出阶段六最重）</div>
+  <div class="bars">
+    <div class="barrow"><span class="lab">一 · 环境</span><div class="track"><div class="fill" style="width:23%;background:var(--accent)"></div></div><span class="val">2–3 天</span></div>
+    <div class="barrow"><span class="lab">二 · 架构分工</span><div class="track"><div class="fill" style="width:31%;background:var(--cpp)"></div></div><span class="val">3–4 天</span></div>
+    <div class="barrow"><span class="lab">三 · 蓝图工作流</span><div class="track"><div class="fill" style="width:38%;background:var(--bp)"></div></div><span class="val">4–5 天</span></div>
+    <div class="barrow"><span class="lab">四 · 数据资产</span><div class="track"><div class="fill" style="width:31%;background:var(--cfg)"></div></div><span class="val">3–4 天</span></div>
+    <div class="barrow"><span class="lab">五 · 背包/存档</span><div class="track"><div class="fill" style="width:31%;background:var(--cpp)"></div></div><span class="val">3–4 天</span></div>
+    <div class="barrow"><span class="lab">六 · GAS ⚠</span><div class="track"><div class="fill" style="width:100%;background:#ff6b6b"></div></div><span class="val">7–10 天</span></div>
+    <div class="barrow"><span class="lab">七 · UI/加载屏</span><div class="track"><div class="fill" style="width:31%;background:var(--bp)"></div></div><span class="val">3–4 天</span></div>
+    <div class="barrow"><span class="lab">八 · 打包/实战</span><div class="track"><div class="fill" style="width:38%;background:var(--accent)"></div></div><span class="val">4–5 天</span></div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0;">阶段六单独占去其余任一阶段约两倍的时间，是当之无愧的重头戏。</p>
+</div>
+
+<!-- ===================== 最终建议 ===================== -->
+<span class="anchor" id="final"></span>
+<h2>给 C++ 程序员的最终建议</h2>
+<ol>
+  <li><strong>别抗拒蓝图</strong>。把它当成“可视化的、面向设计师的 C++”，而不是低级玩具。读得懂蓝图，你才能读懂这个项目一半以上的逻辑。</li>
+  <li><strong>以 C++ 基类为锚，向上追蓝图</strong>。每个系统都从 <code>Source/</code> 进入，这是你的主场；再到 <code>Content/</code> 看装配。</li>
+  <li><strong>改了就跑</strong>。UE 的很多行为靠运行时才看得清（GC、加载时机、网络复制），静态读代码会漏掉一半。</li>
+  <li><strong>GAS 要配合官方文档和社区资料</strong>，光看本项目源码会很吃力 —— 它用了 GAS 的高级特性（ExecutionCalculation、EffectContainer、自定义 AbilityTask）。</li>
+  <li><strong>二进制资产小心改</strong>。<code>.uasset</code>/<code>.umap</code> 只在编辑器里改、无法 diff/merge，改前先想清楚团队协作影响。</li>
+</ol>
+
+<p style="margin-top:50px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px;">由 <code>ActionRPG学习计划.md</code> 生成 · 离线可用单文件 HTML · 关系图（八阶段进阶链 / 学习方法闭环 / 伤害管线 / 三处同步 / 毕业项目串联 / 耗时占比）为本页新增</p>
+</main>
+</div>
+</body>
+</html>
