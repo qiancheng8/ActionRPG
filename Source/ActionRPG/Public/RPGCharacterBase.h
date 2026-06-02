@@ -91,6 +91,10 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Debug")
   float GetMagicNumber() const;
   
+  /** 测试用：返回当前血量百分比 0~1 */
+  UFUNCTION(BlueprintCallable, Category = "Test")
+  float GetHealthPercent() const;
+
 protected:
 	/** The level of this character, should not be modified directly once it has already spawned */
 	UPROPERTY(EditAnywhere, Replicated, Category = Abilities)

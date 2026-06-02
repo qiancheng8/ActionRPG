@@ -23,6 +23,12 @@ float ARPGCharacterBase::GetMagicNumber() const
     return 42.0f;
 }
 
+float ARPGCharacterBase::GetHealthPercent() const
+{
+    const float Max = GetMaxHealth();
+    return Max > 0.f ? GetHealth() / Max : 0.f;
+}
+
 UAbilitySystemComponent* ARPGCharacterBase::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;

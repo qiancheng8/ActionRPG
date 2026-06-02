@@ -94,7 +94,13 @@ float ARPGCharacterBase::GetHealthPercent() const
 
 **第四步，到蓝图里连线。** 在内容浏览器里找到 `Content/Blueprints/BP_Character`，双击打开。进 Event Graph，在空白处右键，菜单里搜 `GetHealthPercent`，就能看到你刚加的节点，把它拖出来。给它接个执行流：从某个事件（比如临时拖一个 `Event BeginPlay`）拉白线进来；再拖一个 `Print String` 节点，把 `GetHealthPercent` 输出的绿线接到 `Print String` 的 In String 输入上（中间会自动插一个 float 转 string 的节点）。连完点 Compile、Save。
 
-**第五步，运行验证。** 关掉蓝图窗口，回到关卡编辑器，点工具栏的 **Play**。游戏一开始，屏幕左上角就会打印出当前血量百分比。看到数字，这趟 C++ 到蓝图的往返就闭环了。
+需要注意的是，默认配置是2秒，改的长一些（如下图所示12.0）才能看到日志
+
+![image-20260602224920498](J:\_ALL\CODE\codeup.aliyun.com\_jy\_ue4.27.2\ActionRPG\_doc\ActionRPG学习计划\UE基础三-蓝图与编辑器工作流.assets\image-20260602224920498.png)
+
+**第五步，运行验证。** 关掉蓝图窗口，回到关卡编辑器，点工具栏的 **Play**。游戏一开始，屏幕左上角就会打印出当前血量百分比（1.0）。看到数字，这趟 C++ 到蓝图的往返就闭环了。
+
+![image-20260602224557493](J:\_ALL\CODE\codeup.aliyun.com\_jy\_ue4.27.2\ActionRPG\_doc\ActionRPG学习计划\UE基础三-蓝图与编辑器工作流.assets\image-20260602224557493.png)
 
 整个过程你体会一下分工：函数的逻辑在 C++ 里（你的主场），但什么时候调它、调完拿结果干嘛，是在蓝图里装配的。这就是 UE 正向开发的日常。
 
