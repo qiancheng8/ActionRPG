@@ -1,0 +1,68 @@
+# ============================================
+# Unreal Engine .gitignore
+# ============================================
+
+# 编译生成的目录
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/Receipts/
+
+# Visual Studio / Rider / VS Code 工程文件
+.vs/
+.vscode/
+.idea/
+*.VC.db
+*.VC.opendb
+*.sln
+*.suo
+*.sdf
+*.opensdf
+*.userprefs
+*.xcodeproj
+*.xcworkspace
+
+# 自动生成的工程文件
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# 编译产物（C++）
+*.obj
+*.pdb
+*.exe
+*.dll
+*.lib
+*.a
+*.so
+*.dylib
+*.app
+*.ipa
+
+# 预编译头
+*.pch
+*.gch
+
+# 临时 / 备份文件
+*.tmp
+*.bak
+*.orig
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 崩溃日志
+Saved/Crashes/
+Saved/Logs/
+
+# 内容打包临时文件
+Content/**/*.tmp
+
+# 插件的编译产物
+Plugins/**/Binaries/
+Plugins/**/Intermediate/
