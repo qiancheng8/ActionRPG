@@ -18,6 +18,16 @@ public:
 	ARPGPlayerControllerBase() {}
 	virtual void BeginPlay() override;
 
+	/**
+	 * 控制台测试命令：演示 Asset Manager 的"资产列表"与"反查"接口。
+	 * 用法（PIE 中按 ~ 输入）：
+	 *   TestAssetManager Potion    只测 Potion 类型
+	 *   TestAssetManager           留空则遍历所有已注册类型
+	 * 结果同时打到 Output Log(LogActionRPG) 和屏幕。
+	 */
+	UFUNCTION(Exec)
+	void TestAssetManager(FString TypeName);
+
 	/** Map of all items owned by this player, from definition to data */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Inventory)
 	TMap<URPGItem*, FRPGItemData> InventoryData;

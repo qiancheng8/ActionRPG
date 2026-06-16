@@ -5,6 +5,9 @@
 #include "RPGGameInstanceBase.h"
 #include "RPGSaveGame.h"
 #include "Items/RPGItem.h"
+#include "RPGAssetManager.h"
+#include "Engine/AssetManager.h"
+#include "Engine/Engine.h"
 
 bool ARPGPlayerControllerBase::AddInventoryItem(URPGItem* NewItem, int32 ItemCount, int32 ItemLevel, bool bAutoSlot)
 {
@@ -404,4 +407,66 @@ void ARPGPlayerControllerBase::BeginPlay()
 	LoadInventory();
 
 	Super::BeginPlay();
+}
+
+void ARPGPlayerControllerBase::TestAssetManager(FString TypeName)
+{
+	UAssetManager& Manager = UAssetManager::Get();
+
+	// 同时打到 Output Log(LogActionRPG) 和屏幕，避免"看不到输出"
+	auto LogLine = [](const FString& Msg)
+	{
+		UE_LOG(LogActionRPG, Display, TEXT("%s"), *Msg);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 12.f, FColor::Cyan, Msg);
+		}
+	};
+
+	// 收集要测试的类型：留空则遍历所有已注册类型
+	TArray<FPrimaryAssetType> TypesToTest;
+	if (TypeName.IsEmpty())
+	{
+		TArray<FPrimaryAssetTypeInfo> TypeInfos;
+		Manager.GetPrimaryAssetTypeInfoList(TypeInfos);
+		for (const FPrimaryAssetTypeInfo& Info : TypeInfos)
+		{
+			TypesToTest.Add(Info.PrimaryAssetType);
+		}
+	}
+	else
+	{
+		TypesToTest.Add(FPrimaryAssetType(*TypeName));
+	}
+
+	LogLine(FString::Printf(TEXT("===== TestAssetManager: 待测类型 %d 个 ====="), TypesToTest.Num()));
+
+	for (const FPrimaryAssetType& Type : TypesToTest)
+	{
+		// ① 列表：拿到该类型所有货号 + 路径
+		TArray<FPrimaryAssetId> IdList;
+		Manager.GetPrimaryAssetIdList(Type, IdList);
+		LogLine(FString::Printf(TEXT("[List] 类型 '%s' 共 %d 个："), *Type.ToString(), IdList.Num()));
+
+		for (const FPrimaryAssetId& Id : IdList)
+		{
+			FSoftObjectPath Path = Manager.GetPrimaryAssetPath(Id); // 货号 -> 路径
+			LogLine(FString::Printf(TEXT("    %s  ->  %s"), *Id.ToString(), *Path.ToString()));
+		}
+
+		// ② 反查：先加载第一个，再从对象 / 路径反查回货号
+		if (IdList.Num() > 0)
+		{
+			URPGItem* Item = URPGAssetManager::Get().ForceLoadItem(IdList[0]);
+			if (Item)
+			{
+				FPrimaryAssetId ById = Manager.GetPrimaryAssetIdForObject(Item);                // 对象 -> 货号
+				FPrimaryAssetId ByPath = Manager.GetPrimaryAssetIdForPath(FSoftObjectPath(Item)); // 路径 -> 货号
+				LogLine(FString::Printf(TEXT("[Reverse] 对象 %s  ->  ById=%s  ByPath=%s"),
+					*Item->GetName(), *ById.ToString(), *ByPath.ToString()));
+			}
+		}
+	}
+
+	LogLine(TEXT("===== TestAssetManager 结束 ====="));
 }
