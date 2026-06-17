@@ -8,6 +8,7 @@ const FPrimaryAssetType	URPGAssetManager::PotionItemType = TEXT("Potion");
 const FPrimaryAssetType	URPGAssetManager::SkillItemType = TEXT("Skill");
 const FPrimaryAssetType	URPGAssetManager::TokenItemType = TEXT("Token");
 const FPrimaryAssetType	URPGAssetManager::WeaponItemType = TEXT("Weapon");
+const FPrimaryAssetType	URPGAssetManager::ArmorItemType = TEXT("Armor");
 
 URPGAssetManager& URPGAssetManager::Get()
 {
@@ -29,6 +30,12 @@ void URPGAssetManager::StartInitialLoading()
 	Super::StartInitialLoading();
 
 	UAbilitySystemGlobals::Get().InitGlobalData();
+
+#if !UE_BUILD_SHIPPING
+	TArray<FPrimaryAssetId> IdList;
+	GetPrimaryAssetIdList(PotionItemType, IdList);   // 这里能直接用类型常量
+	UE_LOG(LogActionRPG, Display, TEXT("[Boot] Potion 数量 = %d"), IdList.Num());
+#endif
 }
 
 

@@ -28,6 +28,7 @@ public:
 	static const FPrimaryAssetType	SkillItemType;
 	static const FPrimaryAssetType	TokenItemType;
 	static const FPrimaryAssetType	WeaponItemType;
+	static const FPrimaryAssetType	ArmorItemType;
 
 	/** Returns the current AssetManager object */
 	static URPGAssetManager& Get();
