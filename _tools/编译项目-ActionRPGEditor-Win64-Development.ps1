@@ -1,0 +1,1 @@
+& "J:\Program Files\Epic Games\UE_4.27\Engine\Build\BatchFiles\Build.bat" ActionRPGEditor Win64 Development "J:\_ALL\CODE\codeup.aliyun.com\_jy\_ue4.27.2\ActionRPG\ActionRPG.uproject" -waitmutex

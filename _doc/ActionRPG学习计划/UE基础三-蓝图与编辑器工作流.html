@@ -324,6 +324,21 @@
 
 <p>整个过程你体会一下分工：函数的逻辑在 C++ 里（你的主场），但什么时候调它、调完拿结果干嘛，是在蓝图里装配的。这就是 UE 正向开发的日常。</p>
 
+<h3>延伸：把阶段一那个 <code>GetMagicNumber</code> 也打印出来</h3>
+<p>还记得阶段一验收清单里加的那个 <code>GetMagicNumber</code> 吗？当时只让你「改一行 C++ → 编译过」，留了一句「运行看到效果，等阶段二三学会连线再说」。现在就来把这半程补上——它和上面 <code>GetHealthPercent</code> 的手顺一模一样，唯一的区别是函数名和返回值。</p>
+<p>如果你阶段一已经加过下面这两段，就不用再加了；没加的话补上：</p>
+<pre><code><span class="cmt">// RPGCharacterBase.h，public 区域</span>
+<span class="kw">UFUNCTION</span>(<span class="ty">BlueprintCallable</span>, Category = <span class="str">"Debug"</span>)
+<span class="kw">float</span> <span class="fn">GetMagicNumber</span>() <span class="kw">const</span>;</code></pre>
+<pre><code><span class="cmt">// RPGCharacterBase.cpp</span>
+<span class="kw">float</span> <span class="ty">ARPGCharacterBase</span>::<span class="fn">GetMagicNumber</span>() <span class="kw">const</span>
+{
+    <span class="kw">return</span> <span class="ty">42.0f</span>;
+}</code></pre>
+<p>编译后回到 <code>BP_Character</code> 的 Event Graph，重复上面的第四步：右键搜节点，这次搜 <code>GetMagicNumber</code>（注意它归在 <code>Debug</code> 分组下，跟 <code>GetHealthPercent</code> 的 <code>Test</code> 分组不是一处），拖出来，输出的绿线接到 <code>Print String</code>，执行流从 <code>Event BeginPlay</code> 拉白线进来。Compile、Save，Play。</p>
+<p>这回屏幕左上角打印的不是血量百分比，而是固定的 <code>42</code>——因为这个函数不读任何状态，就硬返回一个常量。看到这个 <code>42</code>，阶段一那条「改一行 C++ → 编译 → 运行看到效果」的闭环才算真正合上。</p>
+<p>顺带体会一个对比：<code>GetHealthPercent</code> 的返回值会随血量变化（它读了 <code>GetHealth()</code>），而 <code>GetMagicNumber</code> 永远是 42。同样是 <code>BlueprintCallable</code>，一个是「把 C++ 算出来的动态结果递给蓝图」，一个是「给蓝图一个写死的常量」。蓝图侧的连线方式完全不分这两者——它只管拿到一个 float 往下用，至于这个值是算出来的还是写死的，是 C++ 那头的事。这正是「C++ 定义能力、蓝图装配逻辑」分工的一个小注脚。</p>
+
 <!-- ===================== 五、真心话 ===================== -->
 <span class="anchor" id="advice"></span>
 <h2>五、给 C++ 程序员的几句真心话</h2>
